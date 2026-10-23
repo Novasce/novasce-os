@@ -1,0 +1,10 @@
+[Unit]
+Description=Novasce assistente administrativo, a cada minuto
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

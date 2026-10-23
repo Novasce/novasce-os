@@ -1,0 +1,23 @@
+# Mesma unidade que o executor gera (src/schedule.mjs), mas de sistema e com
+# usuário próprio: roda sem ninguém logado e dispensa o enable-linger.
+[Unit]
+Description=Novasce assistente administrativo
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/novasce-agentes/assistentes/src/index.mjs
+
+[Service]
+Type=oneshot
+User=agentes
+Group=agentes
+WorkingDirectory=/var/lib/novasce-agentes/assistentes
+ExecStart=/usr/bin/node /var/lib/novasce-agentes/assistentes/src/index.mjs
+Environment=HOME=/var/lib/novasce-agentes
+Environment=PATH=/var/lib/novasce-agentes/.local/bin:/usr/bin:/bin
+StandardOutput=append:/var/lib/novasce-agentes/assistentes/state/runner.log
+StandardError=append:/var/lib/novasce-agentes/assistentes/state/runner-error.log
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/novasce-agentes

@@ -1,0 +1,27 @@
+#!/usr/bin/bash
+# Monta a imagem nova a partir do repositório e deixa pronta para o próximo
+# reinício. Nunca reinicia sozinho: atualização não fecha app de quem está
+# usando (regra da casa). Quem administra escolhe a hora de reiniciar.
+set -euo pipefail
+
+REPO=/var/lib/novasce-os/repo
+IMAGEM=localhost/novasce-os:latest
+
+[ "$(id -u)" = 0 ] || { echo "Rode com sudo." >&2; exit 1; }
+
+# A chave de leitura do GitHub já está no core.sshCommand do repositório.
+git -C "$REPO" pull --ff-only
+
+# --pull=newer traz a base nova do Aurora quando houver. Se a montagem falhar,
+# a máquina segue na versão atual e o erro fica no journal.
+podman build --pull=newer -t "$IMAGEM" "$REPO"
+
+atual=$(bootc status --format=json | python3 -c 'import json,sys; print(((json.load(sys.stdin).get("spec") or {}).get("image") or {}).get("image", ""))')
+if [ "$atual" = "$IMAGEM" ]; then
+  bootc upgrade
+else
+  bootc switch --transport containers-storage "$IMAGEM"
+fi
+
+podman image prune -f
+echo "Imagem nova pronta. Entra no próximo reinício (bootc status mostra em staged)."

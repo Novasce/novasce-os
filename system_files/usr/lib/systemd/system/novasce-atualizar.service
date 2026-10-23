@@ -1,0 +1,11 @@
+[Unit]
+Description=Novasce OS: monta a imagem nova e deixa pronta para o próximo reinício
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/novasce-os/repo/Containerfile
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/novasce/atualizar
+Nice=10
+IOSchedulingClass=idle

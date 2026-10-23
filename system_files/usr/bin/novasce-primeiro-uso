@@ -1,0 +1,79 @@
+#!/usr/bin/bash
+# Prepara os agentes na primeira vez: confere a máquina, clona o brain e o
+# executor com chave só de leitura, instala o Claude e roda os testes.
+# Pode rodar de novo: cada passo pula o que já está feito.
+set -euo pipefail
+
+[ "$(id -u)" = 0 ] || { echo "Rode com sudo: sudo novasce-primeiro-uso" >&2; exit 1; }
+
+CASA=/var/lib/novasce-agentes
+EXECUTOR="$CASA/assistentes"
+BRAIN="$CASA/brain"
+
+passo() { printf '\n== %s\n' "$1"; }
+como_agentes() {
+  runuser -u agentes -- env HOME="$CASA" PATH="$CASA/.local/bin:/usr/bin:/bin" "$@"
+}
+
+# Cada repositório privado tem a própria chave: o GitHub não aceita a mesma
+# deploy key em dois repositórios. Nenhuma chave dá escrita.
+clonar() {
+  local repo=$1 destino=$2 nome=$3
+  local chave="$CASA/.ssh/$nome"
+  local ssh="ssh -i $chave -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+  [ -d "$destino/.git" ] && { echo "$destino já existe."; return; }
+  como_agentes mkdir -p -m 0700 "$CASA/.ssh"
+  [ -f "$chave" ] || como_agentes ssh-keygen -q -t ed25519 -N "" -C "sede: $nome" -f "$chave"
+  echo
+  echo "Adicione esta chave em github.com/$repo → Settings → Deploy keys → Add deploy key"
+  echo "(título: sede · deixe \"Allow write access\" DESMARCADO):"
+  echo
+  cat "$chave.pub"
+  echo
+  read -rp "Enter quando a chave estiver adicionada... " _
+  como_agentes git -c core.sshCommand="$ssh" clone "git@github.com:$repo.git" "$destino"
+  como_agentes git -C "$destino" config core.sshCommand "$ssh"
+}
+
+passo "1. Conferências da máquina"
+bootc status --booted 2>/dev/null | grep -m1 -i 'image' || true
+mokutil --sb-state || echo "⚠️  não consegui ler o Secure Boot"
+nvidia-smi --query-gpu=name,driver_version --format=csv,noheader || echo "⚠️  o driver NVIDIA não respondeu"
+systemd-cryptenroll --tpm2-device=list || echo "⚠️  nenhum TPM visível: confira no BIOS"
+echo "Node $(node --version)"
+
+passo "2. Brain (contexto dos assistentes)"
+clonar Dsfr62/novasce-brain "$BRAIN" github-brain
+
+passo "3. Executor dos assistentes"
+clonar Dsfr62/novasce-assistentes "$EXECUTOR" github-assistentes
+como_agentes mkdir -p -m 0700 "$EXECUTOR/state"
+
+passo "4. Claude Code do usuário dos agentes"
+if [ -x "$CASA/.local/bin/claude" ]; then
+  echo "Já instalado: $("$CASA/.local/bin/claude" --version)"
+else
+  como_agentes bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+fi
+
+passo "5. Dependências e testes do executor"
+como_agentes bash -c "cd '$EXECUTOR' && npm ci --ignore-scripts && npm test"
+
+passo "6. O que falta, na ordem (interativo de propósito)"
+cat <<EOF
+  a) Entrar no Claude com a conta da casa (imprime uma URL para abrir no navegador):
+     sudo -u agentes -H $CASA/.local/bin/claude
+
+  b) Configurar o executor. Caminho do Claude: $CASA/.local/bin/claude
+     Contexto: $BRAIN/empresa/assistente-administrativo-contexto.md
+     A senha de aplicativo vai em campo oculto, nunca em argumento.
+     sudo -u agentes -H bash -c 'cd $EXECUTOR && npm run setup'
+     sudo -u agentes -H bash -c 'cd $EXECUTOR && npm run connect -- eduardo.savio@novasce.com --imap'
+     sudo -u agentes -H bash -c 'cd $EXECUTOR && npm run doctor -- --connections'
+
+  c) Só com o doctor verde, ligar o agendamento:
+     sudo systemctl enable --now novasce-assistente.timer
+
+  d) Destravar o disco pelo TPM (depois de o Secure Boot estar ok):
+     ujust setup-luks-tpm-unlock
+EOF
