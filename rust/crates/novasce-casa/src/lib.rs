@@ -2,7 +2,10 @@
 pub mod caminhos;
 pub mod cliente;
 pub mod config_casa;
+pub mod descobertas;
 pub mod json_atomico;
+pub mod movimento;
 pub mod nucleo;
+pub mod preferencias;
 pub mod sistema;
 pub mod versoes;
