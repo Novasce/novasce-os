@@ -1,17 +1,19 @@
 # Mesma unidade que o executor gera (src/schedule.mjs), mas de sistema e com
-# usuário próprio: roda sem ninguém logado e dispensa o enable-linger.
+# usuário próprio: roda sem ninguém logado. Só na sede (ExecCondition).
 [Unit]
-Description=Novasce assistente administrativo
+Description=Novasce · rodada dos agentes da sede
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=/var/lib/novasce-agentes/assistentes/src/index.mjs
 
 [Service]
 Type=oneshot
+ExecCondition=/usr/bin/grep -qx sede /etc/novasce/papel
 User=agentes
 Group=agentes
 WorkingDirectory=/var/lib/novasce-agentes/assistentes
-ExecStart=/usr/bin/node /var/lib/novasce-agentes/assistentes/src/index.mjs
+# A trava diz ao Sinal que há uma rodada em andamento (agentsIdle = false).
+ExecStart=/usr/bin/flock --nonblock --conflict-exit-code 0 /run/novasce-agentes/rodada.lock /usr/bin/node /var/lib/novasce-agentes/assistentes/src/index.mjs
 Environment=HOME=/var/lib/novasce-agentes
 Environment=PATH=/var/lib/novasce-agentes/.local/bin:/usr/bin:/bin
 StandardOutput=append:/var/lib/novasce-agentes/assistentes/state/runner.log
@@ -20,4 +22,4 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
-ReadWritePaths=/var/lib/novasce-agentes
+ReadWritePaths=/var/lib/novasce-agentes /run/novasce-agentes

@@ -1,0 +1,3 @@
+# Usuário dos agentes, só na sede. O Preparar copia este arquivo para
+# /etc/sysusers.d quando o papel é sede. Ninguém entra por ele.
+u agentes - "Agentes da Novasce" /var/lib/novasce-agentes /usr/sbin/nologin
