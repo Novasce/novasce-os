@@ -6,6 +6,7 @@ pub mod chaveiro;
 pub mod cliente;
 pub mod config_casa;
 pub mod descobertas;
+pub mod flatpak;
 pub mod json_atomico;
 pub mod movimento;
 pub mod multipart;

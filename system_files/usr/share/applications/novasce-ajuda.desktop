@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Ajuda
+Comment=Central de ajuda e Pedir ajuda da Novasce
+Exec=/usr/bin/novasce-ajuda --central
+Icon=novasce-ajuda
+Categories=System;
+StartupWMClass=org.novasce.ajuda
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
