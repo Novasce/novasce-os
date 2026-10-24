@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/novasce-core", "crates/novasce-sinal", "crates/novasce-helper", "crates/novasce-casa", "crates/novasce-sinal-local", "crates/novasce-chamados", "crates/novasce-comecar", "crates/novasce-sincronizar"]
+members = ["crates/novasce-core", "crates/novasce-sinal", "crates/novasce-helper", "crates/novasce-casa", "crates/novasce-sinal-local", "crates/novasce-chamados", "crates/novasce-comecar", "crates/novasce-sincronizar", "crates/novasce-voz"]
 
 [workspace.package]
 version = "0.1.0"

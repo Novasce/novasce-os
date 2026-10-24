@@ -1,0 +1,29 @@
+prompt = "Novasce, Tenancy, SOPEC, Elmoo, Piatza, Merende, Carimboo, Sala, brain, Começar, Claude, Codex, Gemini, GitHub, Bitwarden, Obsidian."
+
+[[troca]]
+de = "novas se"
+para = "Novasce"
+
+[[troca]]
+de = "nova sce"
+para = "Novasce"
+
+[[troca]]
+de = "tenânsi"
+para = "Tenancy"
+
+[[troca]]
+de = "tenância"
+para = "Tenancy"
+
+[[troca]]
+de = "so pec"
+para = "SOPEC"
+
+[[troca]]
+de = "git hub"
+para = "GitHub"
+
+[[troca]]
+de = "obsidiana"
+para = "Obsidian"
