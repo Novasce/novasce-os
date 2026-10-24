@@ -1,0 +1,11 @@
+// Só administrador (grupo wheel), sentado na máquina, chama o ajudante da
+// Novasce, e com a senha. Quem é do time (sem wheel) recebe "não".
+polkit.addRule(function (action, subject) {
+  if (action.id !== "com.novasce.helper") {
+    return polkit.Result.NOT_HANDLED;
+  }
+  if (subject.local && subject.active && subject.isInGroup("wheel")) {
+    return polkit.Result.AUTH_ADMIN_KEEP;
+  }
+  return polkit.Result.NO;
+});
