@@ -1,0 +1,13 @@
+[package]
+name = "novasce-camada"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[features]
+# Só os apps Tauri ligam: assim o `cargo test --workspace` do CI não precisa do GTK.
+gtk = ["dep:gtk", "dep:gtk-layer-shell"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = { version = "0.18", optional = true }
+gtk-layer-shell = { version = "0.8", optional = true }

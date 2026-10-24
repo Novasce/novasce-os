@@ -1,0 +1,12 @@
+[Unit]
+Description=Novasce OS: falar em vez de digitar
+PartOf=graphical-session.target
+After=graphical-session.target novasce-ydotoold.service
+
+[Service]
+ExecStart=/usr/bin/novasce-voz
+Environment=YDOTOOL_SOCKET=%t/.ydotool_socket
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
