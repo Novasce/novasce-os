@@ -15,13 +15,13 @@ describe("App", () => {
   it("abre no passo pendente", async () => {
     vi.mocked(ponte.estado).mockResolvedValue({ ...estadoDeTeste, tela: "passo1" });
     render(<App />);
-    expect(await screen.findByText("0 de 3 passos")).toBeInTheDocument();
+    expect(await screen.findByText("Passo 1 · Tenancy")).toBeInTheDocument();
   });
 
   it("aplica menos movimento vindo do KDE", async () => {
     vi.mocked(ponte.estado).mockResolvedValue({ ...estadoDeTeste, movimento: 0 });
     render(<App />);
-    await screen.findByText("0 de 3 passos");
+    await screen.findByText("Passo 1 · Tenancy");
     expect(document.documentElement.dataset.movimento).toBe("reduzido");
   });
 
