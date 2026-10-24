@@ -151,7 +151,7 @@ pub fn redes_do_nmcli(saida: &str) -> Vec<RedeWifi> {
 }
 
 /// O modo `-t` do nmcli separa por `:` e escapa `:` e `\` com `\`.
-fn campos_do_nmcli(linha: &str) -> Vec<String> {
+pub(crate) fn campos_do_nmcli(linha: &str) -> Vec<String> {
     let mut campos = vec![String::new()];
     let mut letras = linha.chars();
     while let Some(letra) = letras.next() {

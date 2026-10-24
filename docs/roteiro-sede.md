@@ -90,11 +90,27 @@ O Preparar abre sozinho no login do `eduardo` (administrador). Se não abrir, pr
 |---|---|---|
 | 7.1 Papel | Escolher **Sede** e Continuar | A linha diz "Placa de vídeo encontrada: NVIDIA GeForce RTX 2060. Esta máquina usa a versão com NVIDIA." O KDE pede a senha de administrador uma vez |
 | 7.2 Rede | Com cabo, Continuar | "Esta máquina já está na internet, pelo cabo." |
+| 7.2b Rede por Wi-Fi (teste opcional, sem cabo) | Tirar o cabo, escolher a rede, digitar a senha e clicar **Conectar** | "Esta máquina já está na internet, pela rede" e o nome dela. Com a senha errada: "Não conectou na rede" e o nome, e a rede não fica em `nmcli connection show` |
 | 7.3 Registro, sem o M2 no ar | Esperar a resposta | "O Tenancy ainda não recebe máquinas." Clicar **Registrar depois** |
 | 7.3 Registro, com o M2 no ar | Aprovar o código de 6 letras em **Máquinas e telas** no Tenancy | A tela avança sozinha para o passo 4. `sudo ls -l /var/lib/novasce/maquina.json` mostra `-rw-------` e dono `root` |
 | 7.3b Código recusado (teste opcional) | Gerar um código e recusar no Tenancy | "O Tenancy recusou este código. Gere outro e peça a aprovação de novo." e o botão **Gerar outro código** (a API respondeu `403`) |
 | 7.3c Código vencido (teste opcional) | Gerar um código e esperar 10 minutos sem aprovar | "O código venceu ou já foi usado. Gere outro código." (a API respondeu `410`) |
 | 7.4 De quem é | Criar uma conta de teste ("Teste Sede", `teste@novasce.com`) e clicar **Concluir a sede** | "Contas criadas: teste." e a tela "Máquina pronta" |
+
+Conferência do Wi-Fi (só se o 7.2b foi feito). A senha não pode passar pela linha de comando, onde qualquer conta da máquina a leria. Em outro terminal, durante o clique em **Conectar**:
+
+```bash
+watch -n 0.2 'pgrep -af nmcli'
+```
+
+**Esperado:** nenhuma linha traz a senha nem a palavra `password`; a ativação aparece com `passwd-file /run/user/<uid>/novasce-wifi-.../senha`. Depois de conectar:
+
+```bash
+nmcli -s connection show "<nome da rede>" | grep psk
+ls /run/user/$(id -u) | grep novasce-wifi || echo "nenhum arquivo de senha sobrou"
+```
+
+**Esperado:** `802-11-wireless-security.psk` com a senha digitada (o `-s` mostra o segredo de propósito: não copiar essa saída para lugar nenhum), `psk-flags: 0`, e "nenhum arquivo de senha sobrou". A senha salva é o que reconecta a máquina: no passo 8, depois de **Reiniciar agora**, sem cabo, a máquina volta sozinha ao Wi-Fi, sem pedir a senha (`nmcli -t -f ACTIVE,SSID device wifi | grep '^yes'` mostra a rede) **[só na máquina]**.
 
 Conferir no terminal:
 

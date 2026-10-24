@@ -3,6 +3,7 @@
 use novasce_core::sistema::{
     cabo_conectado, conectividade_plena, placa_nvidia, redes_do_nmcli, RedeWifi, CAMINHO_VARIANTE,
 };
+use novasce_core::wifi;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::io::{BufRead, BufReader};
@@ -121,14 +122,11 @@ pub async fn redes_wifi() -> Result<Vec<RedeWifi>, String> {
 #[tauri::command]
 pub async fn conectar_wifi(ssid: String, senha: String) -> Result<(), String> {
     bloqueante(move || {
-        // A senha vai direto para o NetworkManager desta máquina e fica guardada só nela.
-        let mut args = vec!["--wait", "30", "device", "wifi", "connect", ssid.as_str()];
-        if !senha.is_empty() {
-            args.extend(["password", senha.as_str()]);
-        }
-        rodar(NMCLI, &args)
-            .map(|_| ())
-            .map_err(|_| format!("Não conectou na rede {ssid}. Confira a senha e tente de novo."))
+        // A senha nunca vai na linha de comando (qualquer conta lê /proc/<pid>/cmdline): entra
+        // por um arquivo 0600 que o nmcli lê e que some logo depois. O NetworkManager guarda
+        // a senha no perfil desta máquina e a reconexão depois do boot sai dele.
+        wifi::conectar(|args| rodar(NMCLI, args), &wifi::pasta_para_senha(), &ssid, &senha)
+            .map_err(|e| e.to_string())
     })
     .await
 }
