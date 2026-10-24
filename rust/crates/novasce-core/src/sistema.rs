@@ -75,13 +75,23 @@ pub fn disco_cifrado(json: &str) -> Result<bool, serde_json::Error> {
 
 fn raiz_cifrada(dispositivo: &Dispositivo, acima_cifrado: bool) -> bool {
     let cifrado = acima_cifrado || dispositivo.tipo == "crypt";
-    let e_raiz = dispositivo.mountpoints.iter().flatten().any(|m| m == "/" || m == "/sysroot");
-    (e_raiz && cifrado) || dispositivo.children.iter().any(|filho| raiz_cifrada(filho, cifrado))
+    let e_raiz = dispositivo
+        .mountpoints
+        .iter()
+        .flatten()
+        .any(|m| m == "/" || m == "/sysroot");
+    (e_raiz && cifrado)
+        || dispositivo
+            .children
+            .iter()
+            .any(|filho| raiz_cifrada(filho, cifrado))
 }
 
 /// Entrada: `mokutil --sb-state`.
 pub fn secure_boot_ligado(saida: &str) -> bool {
-    saida.lines().any(|linha| linha.trim() == "SecureBoot enabled")
+    saida
+        .lines()
+        .any(|linha| linha.trim() == "SecureBoot enabled")
 }
 
 /// Nome da placa NVIDIA de vídeo, se houver. Entrada: `lspci -nn`.
@@ -94,7 +104,10 @@ pub fn placa_nvidia(lspci: &str) -> Option<String> {
         let depois = linha.split_once("]: ")?.1;
         let descricao = depois.split(" [10de:").next()?.trim();
         if let (Some(inicio), true) = (descricao.rfind('['), descricao.ends_with(']')) {
-            return Some(format!("NVIDIA {}", &descricao[inicio + 1..descricao.len() - 1]));
+            return Some(format!(
+                "NVIDIA {}",
+                &descricao[inicio + 1..descricao.len() - 1]
+            ));
         }
         Some(descricao.replace("NVIDIA Corporation", "NVIDIA"))
     })
@@ -162,7 +175,9 @@ pub fn conectividade_plena(saida: &str) -> bool {
 
 /// Entrada: `nmcli -t -f TYPE,STATE device`.
 pub fn cabo_conectado(saida: &str) -> bool {
-    saida.lines().any(|linha| linha.trim() == "ethernet:connected")
+    saida
+        .lines()
+        .any(|linha| linha.trim() == "ethernet:connected")
 }
 
 pub fn ler_papel(caminho: &Path) -> Option<Papel> {
@@ -170,7 +185,10 @@ pub fn ler_papel(caminho: &Path) -> Option<Papel> {
 }
 
 pub fn ler_variante(caminho: &Path) -> Variante {
-    match fs::read_to_string(caminho).map(|t| t.trim().to_string()).as_deref() {
+    match fs::read_to_string(caminho)
+        .map(|t| t.trim().to_string())
+        .as_deref()
+    {
         Ok("nvidia") => Variante::Nvidia,
         _ => Variante::Padrao,
     }
@@ -196,7 +214,10 @@ pub fn nome_da_maquina() -> String {
     ["/etc/hostname", "/proc/sys/kernel/hostname"]
         .iter()
         .find_map(|caminho| {
-            fs::read_to_string(caminho).ok().map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
+            fs::read_to_string(caminho)
+                .ok()
+                .map(|t| t.trim().to_string())
+                .filter(|t| !t.is_empty())
         })
         .unwrap_or_else(|| "novasce".to_string())
 }
@@ -239,25 +260,35 @@ mod testes {
 
     #[test]
     fn le_a_versao_do_os_release() {
-        assert_eq!(versao_do_os_release(OS_RELEASE).as_deref(), Some("2026.10.24.1"));
+        assert_eq!(
+            versao_do_os_release(OS_RELEASE).as_deref(),
+            Some("2026.10.24.1")
+        );
         assert_eq!(versao_do_os_release("NAME=x\n"), None);
     }
 
     #[test]
     fn versao_preparada_e_a_do_deployment_staged() {
-        assert_eq!(versao_preparada(RPM_OSTREE).unwrap().as_deref(), Some("2026.10.31.1"));
+        assert_eq!(
+            versao_preparada(RPM_OSTREE).unwrap().as_deref(),
+            Some("2026.10.31.1")
+        );
     }
 
     #[test]
     fn sem_staged_nao_ha_versao_preparada() {
-        let so_booted = r#"{"deployments":[{"booted":true,"staged":false,"version":"2026.10.24.1"}]}"#;
+        let so_booted =
+            r#"{"deployments":[{"booted":true,"staged":false,"version":"2026.10.24.1"}]}"#;
         assert_eq!(versao_preparada(so_booted).unwrap(), None);
     }
 
     #[test]
     fn staged_sem_versao_usa_o_checksum() {
         let sem_versao = r#"{"deployments":[{"staged":true,"checksum":"cccc3333dddd4444eeee"}]}"#;
-        assert_eq!(versao_preparada(sem_versao).unwrap().as_deref(), Some("cccc3333dddd"));
+        assert_eq!(
+            versao_preparada(sem_versao).unwrap().as_deref(),
+            Some("cccc3333dddd")
+        );
     }
 
     #[test]
@@ -270,12 +301,17 @@ mod testes {
     fn secure_boot_pelo_mokutil() {
         assert!(secure_boot_ligado("SecureBoot enabled\n"));
         assert!(!secure_boot_ligado("SecureBoot disabled\n"));
-        assert!(!secure_boot_ligado("EFI variables are not supported on this system\n"));
+        assert!(!secure_boot_ligado(
+            "EFI variables are not supported on this system\n"
+        ));
     }
 
     #[test]
     fn placa_nvidia_com_o_nome_de_mercado() {
-        assert_eq!(placa_nvidia(LSPCI).as_deref(), Some("NVIDIA GeForce RTX 2060"));
+        assert_eq!(
+            placa_nvidia(LSPCI).as_deref(),
+            Some("NVIDIA GeForce RTX 2060")
+        );
         assert_eq!(placa_nvidia(LSPCI.lines().next().unwrap()), None);
     }
 
@@ -285,9 +321,24 @@ mod testes {
         assert_eq!(
             redes,
             vec![
-                RedeWifi { ssid: "Novasce Sede".into(), sinal: 82, protegida: true, em_uso: true },
-                RedeWifi { ssid: "Vizinho:5G".into(), sinal: 64, protegida: true, em_uso: false },
-                RedeWifi { ssid: "Café Aberto".into(), sinal: 40, protegida: false, em_uso: false },
+                RedeWifi {
+                    ssid: "Novasce Sede".into(),
+                    sinal: 82,
+                    protegida: true,
+                    em_uso: true
+                },
+                RedeWifi {
+                    ssid: "Vizinho:5G".into(),
+                    sinal: 64,
+                    protegida: true,
+                    em_uso: false
+                },
+                RedeWifi {
+                    ssid: "Café Aberto".into(),
+                    sinal: 40,
+                    protegida: false,
+                    em_uso: false
+                },
             ]
         );
     }
@@ -318,7 +369,10 @@ mod testes {
         let trava = tempfile::NamedTempFile::new().unwrap();
         assert!(agentes_ociosos(trava.path()));
         let segurando = std::fs::File::open(trava.path()).unwrap();
-        assert_eq!(unsafe { libc::flock(segurando.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) }, 0);
+        assert_eq!(
+            unsafe { libc::flock(segurando.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) },
+            0
+        );
         assert!(!agentes_ociosos(trava.path()));
         drop(segurando);
         assert!(agentes_ociosos(trava.path()));

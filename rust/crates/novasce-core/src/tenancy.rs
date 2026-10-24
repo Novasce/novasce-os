@@ -39,11 +39,18 @@ impl ClienteTenancy {
             .timeout(Duration::from_secs(20))
             .user_agent(concat!("novasce-os/", env!("CARGO_PKG_VERSION")))
             .build();
-        Self { base: base.trim_end_matches('/').to_string(), agente }
+        Self {
+            base: base.trim_end_matches('/').to_string(),
+            agente,
+        }
     }
 
     pub fn registrar(&self, pedido: &PedidoDeRegistro) -> Result<RespostaDeRegistro, ErroTenancy> {
-        json(tratar(self.agente.post(&self.url("/os/machines/pair")).send_json(pedido))?)
+        json(tratar(
+            self.agente
+                .post(&self.url("/os/machines/pair"))
+                .send_json(pedido),
+        )?)
     }
 
     pub fn esperar_registro(&self, poll_token: &str) -> Result<RespostaDaEspera, ErroTenancy> {
@@ -53,21 +60,31 @@ impl ClienteTenancy {
     }
 
     pub fn maquina(&self, token: &str) -> Result<Maquina, ErroTenancy> {
-        json(tratar(com_token(self.agente.get(&self.url("/os/machine")), token).call())?)
+        json(tratar(
+            com_token(self.agente.get(&self.url("/os/machine")), token).call(),
+        )?)
     }
 
     pub fn time(&self, token: &str) -> Result<Vec<MembroDoTime>, ErroTenancy> {
-        json(tratar(com_token(self.agente.get(&self.url("/os/machine/team")), token).call())?)
+        json(tratar(
+            com_token(self.agente.get(&self.url("/os/machine/team")), token).call(),
+        )?)
     }
 
     pub fn definir_dono(&self, token: &str, user_id: &str) -> Result<(), ErroTenancy> {
-        let corpo = PedidoDeDono { user_id: user_id.to_string() };
-        tratar(com_token(self.agente.post(&self.url("/os/machine/owner")), token).send_json(&corpo))?;
+        let corpo = PedidoDeDono {
+            user_id: user_id.to_string(),
+        };
+        tratar(
+            com_token(self.agente.post(&self.url("/os/machine/owner")), token).send_json(&corpo),
+        )?;
         Ok(())
     }
 
     pub fn enviar_sinal(&self, token: &str, sinal: &Sinal) -> Result<(), ErroTenancy> {
-        tratar(com_token(self.agente.post(&self.url("/os/machine/heartbeat")), token).send_json(sinal))?;
+        tratar(
+            com_token(self.agente.post(&self.url("/os/machine/heartbeat")), token).send_json(sinal),
+        )?;
         Ok(())
     }
 
@@ -100,9 +117,10 @@ fn tratar(resultado: Result<ureq::Response, ureq::Error>) -> Result<ureq::Respon
         Err(ureq::Error::Status(428, _)) => Err(ErroTenancy::Pendente),
         Err(ureq::Error::Status(410, _)) => Err(ErroTenancy::Encerrado),
         Err(ureq::Error::Status(403, resposta)) => Err(ErroTenancy::Proibido(mensagem(resposta))),
-        Err(ureq::Error::Status(status, resposta)) => {
-            Err(ErroTenancy::Http { status, mensagem: mensagem(resposta) })
-        }
+        Err(ureq::Error::Status(status, resposta)) => Err(ErroTenancy::Http {
+            status,
+            mensagem: mensagem(resposta),
+        }),
         Err(ureq::Error::Transport(falha)) => Err(ErroTenancy::Rede(falha.to_string())),
     }
 }
@@ -115,16 +133,22 @@ fn mensagem(resposta: ureq::Response) -> String {
 }
 
 fn json<T: DeserializeOwned>(resposta: ureq::Response) -> Result<T, ErroTenancy> {
-    resposta.into_json().map_err(|e| ErroTenancy::Formato(e.to_string()))
+    resposta
+        .into_json()
+        .map_err(|e| ErroTenancy::Formato(e.to_string()))
 }
 
 fn validar_segmento(texto: &str) -> Result<(), ErroTenancy> {
     let valido = !texto.is_empty()
-        && texto.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+        && texto
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
     if valido {
         Ok(())
     } else {
-        Err(ErroTenancy::Formato("pollToken com caracteres inesperados".to_string()))
+        Err(ErroTenancy::Formato(
+            "pollToken com caracteres inesperados".to_string(),
+        ))
     }
 }
 
@@ -154,7 +178,9 @@ mod testes {
             .with_header("content-type", "application/json")
             .with_body(r#"{"pairingCode":"R7M2PX","pollToken":"pt_1","expiresAt":"2026-10-24T12:10:00Z"}"#)
             .create();
-        let r = ClienteTenancy::novo(&servidor.url()).registrar(&pedido()).unwrap();
+        let r = ClienteTenancy::novo(&servidor.url())
+            .registrar(&pedido())
+            .unwrap();
         assert_eq!(r.pairing_code, "R7M2PX");
         assert_eq!(r.poll_token, "pt_1");
         rota.assert();
@@ -169,7 +195,9 @@ mod testes {
             .with_header("content-type", "application/json")
             .with_body(r#"{"statusCode":404,"message":"Cannot POST /os/machines/pair"}"#)
             .create();
-        let erro = ClienteTenancy::novo(&servidor.url()).registrar(&pedido()).unwrap_err();
+        let erro = ClienteTenancy::novo(&servidor.url())
+            .registrar(&pedido())
+            .unwrap_err();
         assert!(matches!(erro, ErroTenancy::SemModulo));
     }
 
@@ -182,7 +210,9 @@ mod testes {
             .with_header("content-type", "application/json")
             .with_body(r#"{"status":"approved","machineId":"m1","machineToken":"nvos_m_abc"}"#)
             .create();
-        let r = ClienteTenancy::novo(&servidor.url()).esperar_registro("pt_1").unwrap();
+        let r = ClienteTenancy::novo(&servidor.url())
+            .esperar_registro("pt_1")
+            .unwrap();
         assert_eq!(r.status, EstadoDoRegistro::Approved);
         assert_eq!(r.machine_token.as_deref(), Some("nvos_m_abc"));
     }
@@ -196,10 +226,18 @@ mod testes {
             .with_header("content-type", "application/json")
             .with_body(r#"{"statusCode":403,"message":"Código recusado"}"#)
             .create();
-        let _vencido = servidor.mock("GET", "/os/machines/pair/pt_vencido").with_status(410).create();
+        let _vencido = servidor
+            .mock("GET", "/os/machines/pair/pt_vencido")
+            .with_status(410)
+            .create();
         let cliente = ClienteTenancy::novo(&servidor.url());
-        assert!(matches!(cliente.esperar_registro("pt_recusado"), Err(ErroTenancy::Proibido(m)) if m == "Código recusado"));
-        assert!(matches!(cliente.esperar_registro("pt_vencido"), Err(ErroTenancy::Encerrado)));
+        assert!(
+            matches!(cliente.esperar_registro("pt_recusado"), Err(ErroTenancy::Proibido(m)) if m == "Código recusado")
+        );
+        assert!(matches!(
+            cliente.esperar_registro("pt_vencido"),
+            Err(ErroTenancy::Encerrado)
+        ));
     }
 
     #[test]
@@ -210,16 +248,22 @@ mod testes {
             .match_header("authorization", "Bearer nvos_m_abc")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"{"id":"m1","name":"Sede","role":"sede","owner":null,"patrimonyCode":null}"#)
+            .with_body(
+                r#"{"id":"m1","name":"Sede","role":"sede","owner":null,"patrimonyCode":null}"#,
+            )
             .create();
-        let m = ClienteTenancy::novo(&format!("{}/api/v1/", servidor.url())).maquina("nvos_m_abc").unwrap();
+        let m = ClienteTenancy::novo(&format!("{}/api/v1/", servidor.url()))
+            .maquina("nvos_m_abc")
+            .unwrap();
         assert_eq!(m.id, "m1");
         rota.assert();
     }
 
     #[test]
     fn poll_token_estranho_nem_sai_da_maquina() {
-        let erro = ClienteTenancy::novo("http://127.0.0.1:9").esperar_registro("../x").unwrap_err();
+        let erro = ClienteTenancy::novo("http://127.0.0.1:9")
+            .esperar_registro("../x")
+            .unwrap_err();
         assert!(matches!(erro, ErroTenancy::Formato(_)));
     }
 
@@ -239,15 +283,22 @@ mod testes {
             secure_boot: true,
             agents_idle: None,
         };
-        ClienteTenancy::novo(&servidor.url()).enviar_sinal("nvos_m_abc", &sinal).unwrap();
+        ClienteTenancy::novo(&servidor.url())
+            .enviar_sinal("nvos_m_abc", &sinal)
+            .unwrap();
         rota.assert();
     }
 
     #[test]
     fn token_revogado_vira_nao_autorizado() {
         let mut servidor = mockito::Server::new();
-        let _rota = servidor.mock("GET", "/os/machine").with_status(401).create();
-        let erro = ClienteTenancy::novo(&servidor.url()).maquina("nvos_m_velho").unwrap_err();
+        let _rota = servidor
+            .mock("GET", "/os/machine")
+            .with_status(401)
+            .create();
+        let erro = ClienteTenancy::novo(&servidor.url())
+            .maquina("nvos_m_velho")
+            .unwrap_err();
         assert!(matches!(erro, ErroTenancy::NaoAutorizado));
     }
 
@@ -260,7 +311,9 @@ mod testes {
             .with_header("content-type", "application/json")
             .with_body(r#"{"statusCode":403,"message":"Prazo de 24 h encerrado"}"#)
             .create();
-        let erro = ClienteTenancy::novo(&servidor.url()).time("nvos_m_abc").unwrap_err();
+        let erro = ClienteTenancy::novo(&servidor.url())
+            .time("nvos_m_abc")
+            .unwrap_err();
         assert!(matches!(erro, ErroTenancy::Proibido(m) if m == "Prazo de 24 h encerrado"));
     }
 
@@ -273,13 +326,17 @@ mod testes {
             .match_body(Matcher::Json(json!({"userId": "u1"})))
             .with_status(204)
             .create();
-        ClienteTenancy::novo(&servidor.url()).definir_dono("nvos_m_abc", "u1").unwrap();
+        ClienteTenancy::novo(&servidor.url())
+            .definir_dono("nvos_m_abc", "u1")
+            .unwrap();
         rota.assert();
     }
 
     #[test]
     fn sem_rede_vira_rede() {
-        let erro = ClienteTenancy::novo("http://127.0.0.1:9").maquina("nvos_m_abc").unwrap_err();
+        let erro = ClienteTenancy::novo("http://127.0.0.1:9")
+            .maquina("nvos_m_abc")
+            .unwrap_err();
         assert!(matches!(erro, ErroTenancy::Rede(_)));
     }
 

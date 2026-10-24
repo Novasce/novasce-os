@@ -16,9 +16,15 @@ pub struct Config {
 #[derive(Debug, thiserror::Error)]
 pub enum ErroConfig {
     #[error("não deu para ler {caminho}: {fonte}")]
-    Ler { caminho: String, fonte: std::io::Error },
+    Ler {
+        caminho: String,
+        fonte: std::io::Error,
+    },
     #[error("config com erro ({origem}): {fonte}")]
-    Toml { origem: &'static str, fonte: toml::de::Error },
+    Toml {
+        origem: &'static str,
+        fonte: toml::de::Error,
+    },
     #[error("falta a chave {0} na config")]
     Falta(&'static str),
     #[error("a chave {chave} precisa começar com http:// ou https://, veio {valor}")]
@@ -48,11 +54,15 @@ impl Config {
     }
 
     pub fn de_texto(imagem: &str, maquina: Option<&str>) -> Result<Self, ErroConfig> {
-        let base: Parcial =
-            toml::from_str(imagem).map_err(|fonte| ErroConfig::Toml { origem: "imagem", fonte })?;
+        let base: Parcial = toml::from_str(imagem).map_err(|fonte| ErroConfig::Toml {
+            origem: "imagem",
+            fonte,
+        })?;
         let local: Parcial = match maquina {
-            Some(texto) => toml::from_str(texto)
-                .map_err(|fonte| ErroConfig::Toml { origem: "máquina", fonte })?,
+            Some(texto) => toml::from_str(texto).map_err(|fonte| ErroConfig::Toml {
+                origem: "máquina",
+                fonte,
+            })?,
             None => Parcial::default(),
         };
         let tenancy_api = url("tenancy_api", local.tenancy_api.or(base.tenancy_api))?;
@@ -64,7 +74,11 @@ impl Config {
             .replace("${TENANCY_WEB}", &tenancy_web)
             .replace("${TENANCY_API}", &tenancy_api);
         let sala_url = url("sala_url", Some(sala))?;
-        Ok(Self { tenancy_api, tenancy_web, sala_url })
+        Ok(Self {
+            tenancy_api,
+            tenancy_web,
+            sala_url,
+        })
     }
 
     /// URLs que a máquina abre: as do Tenancy saem da config, as de fora são fixas.
@@ -86,7 +100,10 @@ fn ler(caminho: &Path) -> Result<Option<String>, ErroConfig> {
     match std::fs::read_to_string(caminho) {
         Ok(texto) => Ok(Some(texto)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(fonte) => Err(ErroConfig::Ler { caminho: caminho.display().to_string(), fonte }),
+        Err(fonte) => Err(ErroConfig::Ler {
+            caminho: caminho.display().to_string(),
+            fonte,
+        }),
     }
 }
 
@@ -128,13 +145,25 @@ sala_url = "${TENANCY_WEB}/sala"
     #[test]
     fn chave_desconhecida_e_erro() {
         let erro = Config::de_texto(IMAGEM, Some("tenancy = 1")).unwrap_err();
-        assert!(matches!(erro, ErroConfig::Toml { origem: "máquina", .. }));
+        assert!(matches!(
+            erro,
+            ErroConfig::Toml {
+                origem: "máquina",
+                ..
+            }
+        ));
     }
 
     #[test]
     fn url_sem_http_e_erro() {
         let erro = Config::de_texto(IMAGEM, Some(r#"tenancy_api = "ftp://x""#)).unwrap_err();
-        assert!(matches!(erro, ErroConfig::UrlInvalida { chave: "tenancy_api", .. }));
+        assert!(matches!(
+            erro,
+            ErroConfig::UrlInvalida {
+                chave: "tenancy_api",
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -150,10 +179,16 @@ sala_url = "${TENANCY_WEB}/sala"
     fn urls_da_casa() {
         let c = Config::de_texto(IMAGEM, None).unwrap();
         assert_eq!(c.url("tenancy").as_deref(), Some("https://web.exemplo"));
-        assert_eq!(c.url("material").as_deref(), Some("https://web.exemplo/time/material"));
+        assert_eq!(
+            c.url("material").as_deref(),
+            Some("https://web.exemplo/time/material")
+        );
         assert_eq!(c.url("sala").as_deref(), Some("https://web.exemplo/sala"));
         assert_eq!(c.url("claude").as_deref(), Some("https://claude.ai"));
-        assert_eq!(c.url("whatsapp").as_deref(), Some("https://web.whatsapp.com"));
+        assert_eq!(
+            c.url("whatsapp").as_deref(),
+            Some("https://web.whatsapp.com")
+        );
         assert_eq!(c.url("outra"), None);
     }
 
@@ -161,14 +196,21 @@ sala_url = "${TENANCY_WEB}/sala"
     fn a_config_publicada_na_imagem_vale() {
         let texto = include_str!("../../../../system_files/usr/share/novasce/config.toml");
         let c = Config::de_texto(texto, None).unwrap();
-        assert_eq!(c.tenancy_api, "https://novasce-tenancy-api-production.up.railway.app/api/v1");
+        assert_eq!(
+            c.tenancy_api,
+            "https://novasce-tenancy-api-production.up.railway.app/api/v1"
+        );
         assert_eq!(c.tenancy_web, "https://tenancy.novasce.com");
         assert_eq!(c.sala_url, "https://tenancy.novasce.com/sala");
     }
 
     #[test]
     fn a_api_com_prefixo_mantem_o_prefixo() {
-        let c = Config::de_texto(IMAGEM, Some(r#"tenancy_api = "https://api.exemplo/api/v1/""#)).unwrap();
+        let c = Config::de_texto(
+            IMAGEM,
+            Some(r#"tenancy_api = "https://api.exemplo/api/v1/""#),
+        )
+        .unwrap();
         assert_eq!(c.tenancy_api, "https://api.exemplo/api/v1");
     }
 }

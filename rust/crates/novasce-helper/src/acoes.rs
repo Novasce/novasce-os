@@ -47,7 +47,10 @@ pub enum ErroHelper {
     #[error("O comando {programa} falhou: {detalhe}")]
     Comando { programa: String, detalhe: String },
     #[error("Não deu para gravar {caminho}: {fonte}")]
-    Arquivo { caminho: String, fonte: std::io::Error },
+    Arquivo {
+        caminho: String,
+        fonte: std::io::Error,
+    },
 }
 
 pub trait Executor {
@@ -59,10 +62,14 @@ pub struct ExecutorReal;
 
 impl Executor for ExecutorReal {
     fn rodar(&self, programa: &str, args: &[&str]) -> Result<String, ErroHelper> {
-        let saida = Command::new(programa).args(args).output().map_err(|e| ErroHelper::Comando {
-            programa: programa.to_string(),
-            detalhe: e.to_string(),
-        })?;
+        let saida =
+            Command::new(programa)
+                .args(args)
+                .output()
+                .map_err(|e| ErroHelper::Comando {
+                    programa: programa.to_string(),
+                    detalhe: e.to_string(),
+                })?;
         if saida.status.success() {
             Ok(String::from_utf8_lossy(&saida.stdout).into_owned())
         } else {
@@ -108,7 +115,10 @@ impl Ambiente<'_> {
 
     fn gravar(&self, destino: &str, conteudo: &[u8], modo: u32) -> Result<(), ErroHelper> {
         let caminho = self.caminho(destino);
-        let erro = |fonte| ErroHelper::Arquivo { caminho: destino.to_string(), fonte };
+        let erro = |fonte| ErroHelper::Arquivo {
+            caminho: destino.to_string(),
+            fonte,
+        };
         if let Some(pasta) = caminho.parent() {
             fs::create_dir_all(pasta).map_err(erro)?;
         }
@@ -117,8 +127,10 @@ impl Ambiente<'_> {
     }
 
     pub fn copiar(&self, origem: &str, destino: &str, modo: u32) -> Result<(), ErroHelper> {
-        let conteudo = fs::read(self.caminho(origem))
-            .map_err(|fonte| ErroHelper::Arquivo { caminho: origem.to_string(), fonte })?;
+        let conteudo = fs::read(self.caminho(origem)).map_err(|fonte| ErroHelper::Arquivo {
+            caminho: origem.to_string(),
+            fonte,
+        })?;
         self.gravar(destino, &conteudo, modo)
     }
 
@@ -126,7 +138,10 @@ impl Ambiente<'_> {
         match fs::remove_file(self.caminho(destino)) {
             Ok(()) => Ok(()),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            Err(fonte) => Err(ErroHelper::Arquivo { caminho: destino.to_string(), fonte }),
+            Err(fonte) => Err(ErroHelper::Arquivo {
+                caminho: destino.to_string(),
+                fonte,
+            }),
         }
     }
 }
@@ -134,7 +149,11 @@ impl Ambiente<'_> {
 /// Grava o papel. Na sede, cria o usuário `agentes` e tira a suspensão.
 /// No notebook, tira o que era só da sede (reinstalar um notebook que voltou).
 pub fn definir_papel(amb: &Ambiente, papel: Papel) -> Result<(), ErroHelper> {
-    amb.gravar(CAMINHO_PAPEL, format!("{}\n", papel.como_texto()).as_bytes(), 0o644)?;
+    amb.gravar(
+        CAMINHO_PAPEL,
+        format!("{}\n", papel.como_texto()).as_bytes(),
+        0o644,
+    )?;
     match papel {
         Papel::Sede => {
             amb.copiar(FONTE_SYSUSERS, DESTINO_SYSUSERS, 0o644)?;
@@ -144,7 +163,12 @@ pub fn definir_papel(amb: &Ambiente, papel: Papel) -> Result<(), ErroHelper> {
             amb.rodar(TMPFILES, &["--create", DESTINO_TMPFILES])?;
         }
         Papel::Notebook => {
-            for destino in [DESTINO_SYSUSERS, DESTINO_TMPFILES, DESTINO_SONO, DESTINO_AUTOLOGIN] {
+            for destino in [
+                DESTINO_SYSUSERS,
+                DESTINO_TMPFILES,
+                DESTINO_SONO,
+                DESTINO_AUTOLOGIN,
+            ] {
                 amb.remover(destino)?;
             }
         }
@@ -231,7 +255,10 @@ pub fn svg_do_avatar(nome: &str) -> String {
         .next()
         .map(|c| c.to_uppercase().collect())
         .unwrap_or_else(|| "?".to_string());
-    let inicial = inicial.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+    let inicial = inicial
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
     format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 96 96\">\
 <circle cx=\"48\" cy=\"48\" r=\"48\" fill=\"#E8F2F2\"/>\
@@ -246,7 +273,11 @@ fn gravar_avatar(amb: &Ambiente, login: &str, nome: &str) -> Result<(), ErroHelp
     amb.rodar(RSVG, &["-w", "256", "-h", "256", "-o", &png, &svg])?;
     amb.remover(&svg)?;
     let usuario = format!("[User]\nIcon={png}\n");
-    amb.gravar(&format!("/var/lib/AccountsService/users/{login}"), usuario.as_bytes(), 0o600)?;
+    amb.gravar(
+        &format!("/var/lib/AccountsService/users/{login}"),
+        usuario.as_bytes(),
+        0o600,
+    )?;
     // Se o accounts-daemon não estiver rodando, o avatar aparece no próximo boot.
     let _ = amb.rodar(SYSTEMCTL, &["try-restart", "accounts-daemon.service"]);
     Ok(())
@@ -259,12 +290,19 @@ pub fn preparar_sede(amb: &Ambiente) -> Result<(), ErroHelper> {
         return Err(ErroHelper::NaoESede);
     }
     if !amb.existe_usuario(LOGIN_SEDE) {
-        amb.rodar(USERADD, &["-m", "-c", "Sede", "-s", "/bin/bash", LOGIN_SEDE])?;
+        amb.rodar(
+            USERADD,
+            &["-m", "-c", "Sede", "-s", "/bin/bash", LOGIN_SEDE],
+        )?;
     }
     amb.rodar(PASSWD, &["-d", LOGIN_SEDE])?;
     amb.copiar(FONTE_AUTOLOGIN, DESTINO_AUTOLOGIN, 0o644)?;
     let config = format!("{}/.config", amb.casa_de(LOGIN_SEDE)?);
-    amb.copiar(FONTE_TRAVA_DA_TELA, &format!("{config}/kscreenlockerrc"), 0o644)?;
+    amb.copiar(
+        FONTE_TRAVA_DA_TELA,
+        &format!("{config}/kscreenlockerrc"),
+        0o644,
+    )?;
     amb.copiar(FONTE_ENERGIA, &format!("{config}/powerdevilrc"), 0o644)?;
     amb.rodar(CHOWN, &["-R", "sede:sede", &config])?;
     Ok(())
@@ -301,18 +339,27 @@ mod testes {
 
     impl Executor for Falso {
         fn rodar(&self, programa: &str, args: &[&str]) -> Result<String, ErroHelper> {
-            self.chamadas.borrow_mut().push(format!("{programa} {}", args.join(" ")));
+            self.chamadas
+                .borrow_mut()
+                .push(format!("{programa} {}", args.join(" ")));
             match programa {
                 GETENT => {
                     let login = args[1];
                     if self.usuarios.borrow().iter().any(|u| u == login) {
-                        Ok(format!("{login}:x:1001:1001:{login}:/home/{login}:/bin/bash\n"))
+                        Ok(format!(
+                            "{login}:x:1001:1001:{login}:/home/{login}:/bin/bash\n"
+                        ))
                     } else {
-                        Err(ErroHelper::Comando { programa: GETENT.into(), detalhe: "não existe".into() })
+                        Err(ErroHelper::Comando {
+                            programa: GETENT.into(),
+                            detalhe: "não existe".into(),
+                        })
                     }
                 }
                 USERADD => {
-                    self.usuarios.borrow_mut().push(args.last().unwrap().to_string());
+                    self.usuarios
+                        .borrow_mut()
+                        .push(args.last().unwrap().to_string());
                     Ok(String::new())
                 }
                 _ => Ok(String::new()),
@@ -322,7 +369,14 @@ mod testes {
 
     fn raiz_com_a_imagem() -> tempfile::TempDir {
         let raiz = tempfile::tempdir().unwrap();
-        for fonte in [FONTE_SYSUSERS, FONTE_TMPFILES, FONTE_SONO, FONTE_AUTOLOGIN, FONTE_TRAVA_DA_TELA, FONTE_ENERGIA] {
+        for fonte in [
+            FONTE_SYSUSERS,
+            FONTE_TMPFILES,
+            FONTE_SONO,
+            FONTE_AUTOLOGIN,
+            FONTE_TRAVA_DA_TELA,
+            FONTE_ENERGIA,
+        ] {
             let caminho = raiz.path().join(fonte.trim_start_matches('/'));
             fs::create_dir_all(caminho.parent().unwrap()).unwrap();
             fs::write(&caminho, format!("conteúdo de {fonte}\n")).unwrap();
@@ -338,11 +392,20 @@ mod testes {
     fn papel_sede_liga_os_agentes_e_tira_o_sono() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&[]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         definir_papel(&amb, Papel::Sede).unwrap();
         assert_eq!(ler(raiz.path(), CAMINHO_PAPEL), "sede\n");
-        assert_eq!(ler(raiz.path(), DESTINO_SYSUSERS), format!("conteúdo de {FONTE_SYSUSERS}\n"));
-        assert_eq!(ler(raiz.path(), DESTINO_SONO), format!("conteúdo de {FONTE_SONO}\n"));
+        assert_eq!(
+            ler(raiz.path(), DESTINO_SYSUSERS),
+            format!("conteúdo de {FONTE_SYSUSERS}\n")
+        );
+        assert_eq!(
+            ler(raiz.path(), DESTINO_SONO),
+            format!("conteúdo de {FONTE_SONO}\n")
+        );
         assert!(falso.chamou(&format!("{SYSUSERS} {DESTINO_SYSUSERS}")));
         assert!(falso.chamou(&format!("{TMPFILES} --create {DESTINO_TMPFILES}")));
     }
@@ -351,13 +414,25 @@ mod testes {
     fn papel_notebook_tira_o_que_era_da_sede() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&[]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         definir_papel(&amb, Papel::Sede).unwrap();
-        amb.copiar(FONTE_AUTOLOGIN, DESTINO_AUTOLOGIN, 0o644).unwrap();
+        amb.copiar(FONTE_AUTOLOGIN, DESTINO_AUTOLOGIN, 0o644)
+            .unwrap();
         definir_papel(&amb, Papel::Notebook).unwrap();
         assert_eq!(ler(raiz.path(), CAMINHO_PAPEL), "notebook\n");
-        for destino in [DESTINO_SYSUSERS, DESTINO_TMPFILES, DESTINO_SONO, DESTINO_AUTOLOGIN] {
-            assert!(!raiz.path().join(destino.trim_start_matches('/')).exists(), "{destino} ficou");
+        for destino in [
+            DESTINO_SYSUSERS,
+            DESTINO_TMPFILES,
+            DESTINO_SONO,
+            DESTINO_AUTOLOGIN,
+        ] {
+            assert!(
+                !raiz.path().join(destino.trim_start_matches('/')).exists(),
+                "{destino} ficou"
+            );
         }
     }
 
@@ -383,10 +458,15 @@ mod testes {
     fn conta_pessoal_sem_sudo_e_com_senha_no_primeiro_login() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&[]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         let login = criar_conta_pessoal(&amb, "Luan Silva", "luan.silva@novasce.com").unwrap();
         assert_eq!(login, "luan-silva");
-        assert!(falso.chamou(&format!("{USERADD} -m -c Luan Silva -s /bin/bash luan-silva")));
+        assert!(falso.chamou(&format!(
+            "{USERADD} -m -c Luan Silva -s /bin/bash luan-silva"
+        )));
         assert!(falso.chamou(&format!("{PASSWD} -d luan-silva")));
         assert!(falso.chamou(&format!("{CHAGE} -d 0 luan-silva")));
         assert!(!falso.chamadas.borrow().iter().any(|c| c.contains("wheel")));
@@ -400,10 +480,17 @@ mod testes {
     fn conta_que_ja_existe_nao_e_tocada() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&["luan-silva"]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         let erro = conferir_conta_nova(&amb, "Luan Silva", "luan.silva@novasce.com").unwrap_err();
         assert!(matches!(erro, ErroHelper::ContaExiste(l) if l == "luan-silva"));
-        assert!(!falso.chamadas.borrow().iter().any(|c| c.starts_with(USERADD)));
+        assert!(!falso
+            .chamadas
+            .borrow()
+            .iter()
+            .any(|c| c.starts_with(USERADD)));
     }
 
     #[test]
@@ -418,7 +505,10 @@ mod testes {
     fn sede_so_no_papel_sede() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&[]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         definir_papel(&amb, Papel::Notebook).unwrap();
         assert!(matches!(preparar_sede(&amb), Err(ErroHelper::NaoESede)));
     }
@@ -427,14 +517,26 @@ mod testes {
     fn preparar_sede_cria_a_conta_e_liga_a_entrada_automatica() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&[]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         definir_papel(&amb, Papel::Sede).unwrap();
         preparar_sede(&amb).unwrap();
         assert!(falso.chamou(&format!("{USERADD} -m -c Sede -s /bin/bash sede")));
         assert!(falso.chamou(&format!("{PASSWD} -d sede")));
-        assert_eq!(ler(raiz.path(), DESTINO_AUTOLOGIN), format!("conteúdo de {FONTE_AUTOLOGIN}\n"));
-        assert_eq!(ler(raiz.path(), "/home/sede/.config/kscreenlockerrc"), format!("conteúdo de {FONTE_TRAVA_DA_TELA}\n"));
-        assert_eq!(ler(raiz.path(), "/home/sede/.config/powerdevilrc"), format!("conteúdo de {FONTE_ENERGIA}\n"));
+        assert_eq!(
+            ler(raiz.path(), DESTINO_AUTOLOGIN),
+            format!("conteúdo de {FONTE_AUTOLOGIN}\n")
+        );
+        assert_eq!(
+            ler(raiz.path(), "/home/sede/.config/kscreenlockerrc"),
+            format!("conteúdo de {FONTE_TRAVA_DA_TELA}\n")
+        );
+        assert_eq!(
+            ler(raiz.path(), "/home/sede/.config/powerdevilrc"),
+            format!("conteúdo de {FONTE_ENERGIA}\n")
+        );
         assert!(falso.chamou(&format!("{CHOWN} -R sede:sede /home/sede/.config")));
     }
 
@@ -442,17 +544,27 @@ mod testes {
     fn preparar_sede_de_novo_nao_recria_a_conta() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&["sede"]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         definir_papel(&amb, Papel::Sede).unwrap();
         preparar_sede(&amb).unwrap();
-        assert!(!falso.chamadas.borrow().iter().any(|c| c.starts_with(USERADD)));
+        assert!(!falso
+            .chamadas
+            .borrow()
+            .iter()
+            .any(|c| c.starts_with(USERADD)));
     }
 
     #[test]
     fn concluir_marca_a_maquina() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&[]);
-        let amb = Ambiente { raiz: raiz.path().to_path_buf(), executor: &falso };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
         concluir(&amb).unwrap();
         assert_eq!(ler(raiz.path(), CAMINHO_PREPARADO), "ok\n");
     }

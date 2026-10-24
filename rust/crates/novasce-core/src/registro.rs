@@ -30,7 +30,10 @@ pub struct Espera {
 impl Default for Espera {
     /// De 5 em 5 segundos, por pouco mais que os 10 minutos do código.
     fn default() -> Self {
-        Self { intervalo: Duration::from_secs(5), tentativas: 125 }
+        Self {
+            intervalo: Duration::from_secs(5),
+            tentativas: 125,
+        }
     }
 }
 
@@ -55,10 +58,15 @@ pub fn registrar(
         match situacao.status {
             EstadoDoRegistro::Pending => continue,
             EstadoDoRegistro::Approved => {
-                let (Some(machine_id), Some(machine_token)) = (situacao.machine_id, situacao.machine_token) else {
+                let (Some(machine_id), Some(machine_token)) =
+                    (situacao.machine_id, situacao.machine_token)
+                else {
                     return Err(ErroDoRegistro::SemToken);
                 };
-                guarda.salvar(&MaquinaSalva { machine_id: machine_id.clone(), machine_token })?;
+                guarda.salvar(&MaquinaSalva {
+                    machine_id: machine_id.clone(),
+                    machine_token,
+                })?;
                 return Ok(FimDoRegistro::Aprovado { machine_id });
             }
         }
@@ -93,7 +101,10 @@ mod testes {
     fn sem_dormir(_: Duration) {}
 
     fn rapido(tentativas: u32) -> Espera {
-        Espera { intervalo: Duration::ZERO, tentativas }
+        Espera {
+            intervalo: Duration::ZERO,
+            tentativas,
+        }
     }
 
     /// Devolve o servidor e a rota criada: a rota precisa ficar viva no teste.
@@ -103,7 +114,9 @@ mod testes {
             .mock("POST", "/os/machines/pair")
             .with_status(201)
             .with_header("content-type", "application/json")
-            .with_body(r#"{"pairingCode":"R7M2PX","pollToken":"pt_1","expiresAt":"2026-10-24T12:10:00Z"}"#)
+            .with_body(
+                r#"{"pairingCode":"R7M2PX","pollToken":"pt_1","expiresAt":"2026-10-24T12:10:00Z"}"#,
+            )
             .create();
         (servidor, rota)
     }
@@ -120,7 +133,12 @@ mod testes {
     #[test]
     fn aprovado_avisa_o_codigo_e_guarda_o_token() {
         let (mut servidor, _codigo) = servidor_com_codigo();
-        let _espera = espera(&mut servidor, 200, r#"{"status":"approved","machineId":"m1","machineToken":"nvos_m_abc"}"#).create();
+        let _espera = espera(
+            &mut servidor,
+            200,
+            r#"{"status":"approved","machineId":"m1","machineToken":"nvos_m_abc"}"#,
+        )
+        .create();
         let pasta = tempfile::tempdir().unwrap();
         let guarda = GuardaDoToken::em(pasta.path().join("novasce/maquina.json"));
         let mut codigos = Vec::new();
@@ -133,7 +151,12 @@ mod testes {
             &mut |r| codigos.push(r.pairing_code.clone()),
         )
         .unwrap();
-        assert_eq!(fim, FimDoRegistro::Aprovado { machine_id: "m1".into() });
+        assert_eq!(
+            fim,
+            FimDoRegistro::Aprovado {
+                machine_id: "m1".into()
+            }
+        );
         assert_eq!(codigos, vec!["R7M2PX".to_string()]);
         assert_eq!(guarda.ler().unwrap().unwrap().machine_token, "nvos_m_abc");
     }
@@ -141,10 +164,23 @@ mod testes {
     #[test]
     fn recusado_403_vira_negado_e_nao_guarda_nada() {
         let (mut servidor, _codigo) = servidor_com_codigo();
-        let _espera = espera(&mut servidor, 403, r#"{"statusCode":403,"message":"Código recusado"}"#).create();
+        let _espera = espera(
+            &mut servidor,
+            403,
+            r#"{"statusCode":403,"message":"Código recusado"}"#,
+        )
+        .create();
         let pasta = tempfile::tempdir().unwrap();
         let guarda = GuardaDoToken::em(pasta.path().join("maquina.json"));
-        let fim = registrar(&ClienteTenancy::novo(&servidor.url()), &guarda, &pedido(), &rapido(3), &sem_dormir, &mut |_| {}).unwrap();
+        let fim = registrar(
+            &ClienteTenancy::novo(&servidor.url()),
+            &guarda,
+            &pedido(),
+            &rapido(3),
+            &sem_dormir,
+            &mut |_| {},
+        )
+        .unwrap();
         assert_eq!(fim, FimDoRegistro::Negado);
         assert_eq!(guarda.ler().unwrap(), None);
     }
@@ -152,10 +188,23 @@ mod testes {
     #[test]
     fn vencido_ou_ja_entregue_410_vira_expirado() {
         let (mut servidor, _codigo) = servidor_com_codigo();
-        let _espera = espera(&mut servidor, 410, r#"{"statusCode":410,"message":"Código expirado"}"#).create();
+        let _espera = espera(
+            &mut servidor,
+            410,
+            r#"{"statusCode":410,"message":"Código expirado"}"#,
+        )
+        .create();
         let pasta = tempfile::tempdir().unwrap();
         let guarda = GuardaDoToken::em(pasta.path().join("maquina.json"));
-        let fim = registrar(&ClienteTenancy::novo(&servidor.url()), &guarda, &pedido(), &rapido(3), &sem_dormir, &mut |_| {}).unwrap();
+        let fim = registrar(
+            &ClienteTenancy::novo(&servidor.url()),
+            &guarda,
+            &pedido(),
+            &rapido(3),
+            &sem_dormir,
+            &mut |_| {},
+        )
+        .unwrap();
         assert_eq!(fim, FimDoRegistro::Expirado);
         assert_eq!(guarda.ler().unwrap(), None);
     }
@@ -163,10 +212,20 @@ mod testes {
     #[test]
     fn pendente_ate_acabar_as_tentativas_vira_expirado() {
         let (mut servidor, _codigo) = servidor_com_codigo();
-        let rota = espera(&mut servidor, 200, r#"{"status":"pending"}"#).expect(3).create();
+        let rota = espera(&mut servidor, 200, r#"{"status":"pending"}"#)
+            .expect(3)
+            .create();
         let pasta = tempfile::tempdir().unwrap();
         let guarda = GuardaDoToken::em(pasta.path().join("maquina.json"));
-        let fim = registrar(&ClienteTenancy::novo(&servidor.url()), &guarda, &pedido(), &rapido(3), &sem_dormir, &mut |_| {}).unwrap();
+        let fim = registrar(
+            &ClienteTenancy::novo(&servidor.url()),
+            &guarda,
+            &pedido(),
+            &rapido(3),
+            &sem_dormir,
+            &mut |_| {},
+        )
+        .unwrap();
         assert_eq!(fim, FimDoRegistro::Expirado);
         rota.assert();
     }
@@ -174,21 +233,48 @@ mod testes {
     #[test]
     fn aprovado_sem_token_e_erro() {
         let (mut servidor, _codigo) = servidor_com_codigo();
-        let _espera = espera(&mut servidor, 200, r#"{"status":"approved","machineId":"m1"}"#).create();
+        let _espera = espera(
+            &mut servidor,
+            200,
+            r#"{"status":"approved","machineId":"m1"}"#,
+        )
+        .create();
         let pasta = tempfile::tempdir().unwrap();
         let guarda = GuardaDoToken::em(pasta.path().join("maquina.json"));
-        let erro = registrar(&ClienteTenancy::novo(&servidor.url()), &guarda, &pedido(), &rapido(3), &sem_dormir, &mut |_| {}).unwrap_err();
+        let erro = registrar(
+            &ClienteTenancy::novo(&servidor.url()),
+            &guarda,
+            &pedido(),
+            &rapido(3),
+            &sem_dormir,
+            &mut |_| {},
+        )
+        .unwrap_err();
         assert!(matches!(erro, ErroDoRegistro::SemToken));
     }
 
     #[test]
     fn sem_o_modulo_os_o_erro_diz_isso() {
         let mut servidor = mockito::Server::new();
-        let _rota = servidor.mock("POST", "/os/machines/pair").with_status(404).create();
+        let _rota = servidor
+            .mock("POST", "/os/machines/pair")
+            .with_status(404)
+            .create();
         let pasta = tempfile::tempdir().unwrap();
         let guarda = GuardaDoToken::em(pasta.path().join("maquina.json"));
-        let erro = registrar(&ClienteTenancy::novo(&servidor.url()), &guarda, &pedido(), &rapido(3), &sem_dormir, &mut |_| {}).unwrap_err();
-        assert!(matches!(erro, ErroDoRegistro::Tenancy(ErroTenancy::SemModulo)));
+        let erro = registrar(
+            &ClienteTenancy::novo(&servidor.url()),
+            &guarda,
+            &pedido(),
+            &rapido(3),
+            &sem_dormir,
+            &mut |_| {},
+        )
+        .unwrap_err();
+        assert!(matches!(
+            erro,
+            ErroDoRegistro::Tenancy(ErroTenancy::SemModulo)
+        ));
     }
 
     #[test]

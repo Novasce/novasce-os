@@ -18,15 +18,21 @@ pub struct NotaDeVersao {
 }
 
 pub fn ler_notas(json: &str) -> Result<Vec<NotaDeVersao>, String> {
-    let notas: Vec<NotaDeVersao> =
-        serde_json::from_str(json).map_err(|e| format!("notas/versoes.json fora do formato: {e}"))?;
+    let notas: Vec<NotaDeVersao> = serde_json::from_str(json)
+        .map_err(|e| format!("notas/versoes.json fora do formato: {e}"))?;
     for nota in &notas {
         if !versao_valida(&nota.versao) {
-            return Err(format!("a versão {} está fora do formato AAAA.MM.DD.N", nota.versao));
+            return Err(format!(
+                "a versão {} está fora do formato AAAA.MM.DD.N",
+                nota.versao
+            ));
         }
         for (campo, texto) in [("linha", &nota.linha), ("custo", &nota.custo)] {
             if texto.trim().is_empty() || texto.chars().count() > 140 {
-                return Err(format!("{campo} da versão {} precisa ter de 1 a 140 caracteres", nota.versao));
+                return Err(format!(
+                    "{campo} da versão {} precisa ter de 1 a 140 caracteres",
+                    nota.versao
+                ));
             }
             if texto.contains('\u{2014}') {
                 return Err(format!("{campo} da versão {} tem travessão", nota.versao));
@@ -77,12 +83,17 @@ mod testes {
 
     #[test]
     fn recusa_versao_fora_do_formato() {
-        assert!(ler_notas(r#"[{"versao":"1.0.4","tipo":"opcional","linha":"x","custo":"y"}]"#).is_err());
+        assert!(
+            ler_notas(r#"[{"versao":"1.0.4","tipo":"opcional","linha":"x","custo":"y"}]"#).is_err()
+        );
     }
 
     #[test]
     fn recusa_tipo_desconhecido() {
-        assert!(ler_notas(r#"[{"versao":"2026.10.24.1","tipo":"urgente","linha":"x","custo":"y"}]"#).is_err());
+        assert!(ler_notas(
+            r#"[{"versao":"2026.10.24.1","tipo":"urgente","linha":"x","custo":"y"}]"#
+        )
+        .is_err());
     }
 
     #[test]

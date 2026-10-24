@@ -29,7 +29,10 @@ impl fmt::Debug for MaquinaSalva {
 #[derive(Debug, thiserror::Error)]
 pub enum ErroToken {
     #[error("não deu para ler ou gravar {caminho}: {fonte}")]
-    Arquivo { caminho: String, fonte: std::io::Error },
+    Arquivo {
+        caminho: String,
+        fonte: std::io::Error,
+    },
     #[error("{caminho} está aberto para outros usuários (modo {modo:o}); precisa ser 0600")]
     PermissaoAberta { caminho: String, modo: u32 },
     #[error("{0} não tem um token de máquina válido")]
@@ -46,7 +49,9 @@ impl GuardaDoToken {
     }
 
     pub fn em(caminho: impl Into<PathBuf>) -> Self {
-        Self { caminho: caminho.into() }
+        Self {
+            caminho: caminho.into(),
+        }
     }
 
     pub fn caminho(&self) -> &Path {
@@ -57,9 +62,16 @@ impl GuardaDoToken {
         if !maquina.machine_token.starts_with(PREFIXO_DA_MAQUINA) {
             return Err(ErroToken::Formato(self.texto()));
         }
-        let erro = |fonte| ErroToken::Arquivo { caminho: self.texto(), fonte };
+        let erro = |fonte| ErroToken::Arquivo {
+            caminho: self.texto(),
+            fonte,
+        };
         if let Some(pasta) = self.caminho.parent() {
-            DirBuilder::new().recursive(true).mode(0o700).create(pasta).map_err(erro)?;
+            DirBuilder::new()
+                .recursive(true)
+                .mode(0o700)
+                .create(pasta)
+                .map_err(erro)?;
         }
         let novo = self.caminho.with_extension("json.novo");
         let mut arquivo = OpenOptions::new()
@@ -81,14 +93,24 @@ impl GuardaDoToken {
         let meta = match fs::metadata(&self.caminho) {
             Ok(meta) => meta,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-            Err(fonte) => return Err(ErroToken::Arquivo { caminho: self.texto(), fonte }),
+            Err(fonte) => {
+                return Err(ErroToken::Arquivo {
+                    caminho: self.texto(),
+                    fonte,
+                })
+            }
         };
         let modo = meta.permissions().mode() & 0o777;
         if modo & 0o077 != 0 {
-            return Err(ErroToken::PermissaoAberta { caminho: self.texto(), modo });
+            return Err(ErroToken::PermissaoAberta {
+                caminho: self.texto(),
+                modo,
+            });
         }
-        let texto = fs::read_to_string(&self.caminho)
-            .map_err(|fonte| ErroToken::Arquivo { caminho: self.texto(), fonte })?;
+        let texto = fs::read_to_string(&self.caminho).map_err(|fonte| ErroToken::Arquivo {
+            caminho: self.texto(),
+            fonte,
+        })?;
         let maquina: MaquinaSalva =
             serde_json::from_str(&texto).map_err(|_| ErroToken::Formato(self.texto()))?;
         if !maquina.machine_token.starts_with(PREFIXO_DA_MAQUINA) {
@@ -107,7 +129,10 @@ mod testes {
     use super::*;
 
     fn maquina() -> MaquinaSalva {
-        MaquinaSalva { machine_id: "m1".into(), machine_token: "nvos_m_abc123".into() }
+        MaquinaSalva {
+            machine_id: "m1".into(),
+            machine_token: "nvos_m_abc123".into(),
+        }
     }
 
     #[test]
@@ -117,7 +142,11 @@ mod testes {
         guarda.salvar(&maquina()).unwrap();
         let modo = fs::metadata(guarda.caminho()).unwrap().permissions().mode() & 0o777;
         assert_eq!(modo, 0o600);
-        let pasta = fs::metadata(raiz.path().join("novasce")).unwrap().permissions().mode() & 0o777;
+        let pasta = fs::metadata(raiz.path().join("novasce"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777;
         assert_eq!(pasta, 0o700);
         assert_eq!(guarda.ler().unwrap(), Some(maquina()));
     }
@@ -125,7 +154,12 @@ mod testes {
     #[test]
     fn sem_arquivo_e_maquina_sem_registro() {
         let raiz = tempfile::tempdir().unwrap();
-        assert_eq!(GuardaDoToken::em(raiz.path().join("maquina.json")).ler().unwrap(), None);
+        assert_eq!(
+            GuardaDoToken::em(raiz.path().join("maquina.json"))
+                .ler()
+                .unwrap(),
+            None
+        );
     }
 
     #[test]
@@ -134,14 +168,20 @@ mod testes {
         let guarda = GuardaDoToken::em(raiz.path().join("maquina.json"));
         guarda.salvar(&maquina()).unwrap();
         fs::set_permissions(guarda.caminho(), fs::Permissions::from_mode(0o644)).unwrap();
-        assert!(matches!(guarda.ler(), Err(ErroToken::PermissaoAberta { modo: 0o644, .. })));
+        assert!(matches!(
+            guarda.ler(),
+            Err(ErroToken::PermissaoAberta { modo: 0o644, .. })
+        ));
     }
 
     #[test]
     fn token_sem_prefixo_nao_e_salvo() {
         let raiz = tempfile::tempdir().unwrap();
         let guarda = GuardaDoToken::em(raiz.path().join("maquina.json"));
-        let errado = MaquinaSalva { machine_id: "m1".into(), machine_token: "abc".into() };
+        let errado = MaquinaSalva {
+            machine_id: "m1".into(),
+            machine_token: "abc".into(),
+        };
         assert!(matches!(guarda.salvar(&errado), Err(ErroToken::Formato(_))));
         assert!(!guarda.caminho().exists());
     }

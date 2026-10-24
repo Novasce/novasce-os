@@ -108,9 +108,12 @@ fn heartbeat(config: &Config) -> ExitCode {
 fn coletar_sinal() -> Sinal {
     let preparada = saida("/usr/bin/rpm-ostree", &["status", "--json"])
         .and_then(|json| versao_preparada(&json).ok().flatten());
-    let cifrado = saida("/usr/bin/lsblk", &["--json", "--tree", "-o", "NAME,TYPE,MOUNTPOINTS"])
-        .and_then(|json| disco_cifrado(&json).ok())
-        .unwrap_or(false);
+    let cifrado = saida(
+        "/usr/bin/lsblk",
+        &["--json", "--tree", "-o", "NAME,TYPE,MOUNTPOINTS"],
+    )
+    .and_then(|json| disco_cifrado(&json).ok())
+    .unwrap_or(false);
     let secure_boot = saida("/usr/bin/mokutil", &["--sb-state"])
         .map(|texto| secure_boot_ligado(&texto))
         .unwrap_or(false);
@@ -163,7 +166,9 @@ fn pair(config: &Config) -> ExitCode {
     );
     match fim {
         Ok(FimDoRegistro::Aprovado { .. }) => {
-            println!("Aprovada. Para mandar o primeiro sinal agora: sudo systemctl start novasce-sinal");
+            println!(
+                "Aprovada. Para mandar o primeiro sinal agora: sudo systemctl start novasce-sinal"
+            );
             ExitCode::SUCCESS
         }
         Ok(FimDoRegistro::Negado) => {

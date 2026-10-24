@@ -59,7 +59,9 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     // SAFETY: geteuid não tem efeito colateral.
     if unsafe { libc::geteuid() } != 0 {
-        emitir(json!({"evento": "erro", "mensagem": "O ajudante precisa de administrador. Abra pelo Preparar esta máquina."}));
+        emitir(
+            json!({"evento": "erro", "mensagem": "O ajudante precisa de administrador. Abra pelo Preparar esta máquina."}),
+        );
         return ExitCode::from(1);
     }
     match executar(cli.comando) {
@@ -73,7 +75,10 @@ fn main() -> ExitCode {
 
 fn executar(comando: Comando) -> Result<(), String> {
     let executor = ExecutorReal;
-    let amb = Ambiente { raiz: PathBuf::from("/"), executor: &executor };
+    let amb = Ambiente {
+        raiz: PathBuf::from("/"),
+        executor: &executor,
+    };
     match comando {
         Comando::Papel { papel } => {
             let papel = match papel {
@@ -93,9 +98,12 @@ fn executar(comando: Comando) -> Result<(), String> {
             acoes::conferir_conta_nova(&amb, &nome, &email).map_err(|e| e.to_string())?;
             if let Some(id) = dono.as_deref() {
                 let token = token_da_maquina()?;
-                cliente()?.definir_dono(&token, id).map_err(texto_do_tenancy)?;
+                cliente()?
+                    .definir_dono(&token, id)
+                    .map_err(texto_do_tenancy)?;
             }
-            let login = acoes::criar_conta_pessoal(&amb, &nome, &email).map_err(|e| e.to_string())?;
+            let login =
+                acoes::criar_conta_pessoal(&amb, &nome, &email).map_err(|e| e.to_string())?;
             emitir(json!({"evento": "conta", "login": login}));
         }
         Comando::PrepararSede => {
@@ -133,7 +141,8 @@ fn texto_do_tenancy(erro: ErroTenancy) -> String {
 }
 
 fn registrar() -> Result<(), String> {
-    let papel = ler_papel(Path::new(CAMINHO_PAPEL)).ok_or("Defina o papel da máquina antes de registrar.")?;
+    let papel = ler_papel(Path::new(CAMINHO_PAPEL))
+        .ok_or("Defina o papel da máquina antes de registrar.")?;
     let pedido = PedidoDeRegistro {
         role: papel,
         variant: ler_variante(Path::new(CAMINHO_VARIANTE)),
@@ -146,13 +155,19 @@ fn registrar() -> Result<(), String> {
         &pedido,
         &Espera::default(),
         &std::thread::sleep,
-        &mut |r| emitir(json!({"evento": "codigo", "codigo": r.pairing_code, "expiraEm": r.expires_at})),
+        &mut |r| {
+            emitir(json!({"evento": "codigo", "codigo": r.pairing_code, "expiraEm": r.expires_at}))
+        },
     );
     match fim {
-        Ok(FimDoRegistro::Aprovado { machine_id }) => emitir(json!({"evento": "aprovado", "maquina": machine_id})),
+        Ok(FimDoRegistro::Aprovado { machine_id }) => {
+            emitir(json!({"evento": "aprovado", "maquina": machine_id}))
+        }
         Ok(FimDoRegistro::Negado) => emitir(json!({"evento": "negado"})),
         Ok(FimDoRegistro::Expirado) => emitir(json!({"evento": "expirado"})),
-        Err(ErroDoRegistro::Tenancy(ErroTenancy::SemModulo)) => emitir(json!({"evento": "sem-modulo"})),
+        Err(ErroDoRegistro::Tenancy(ErroTenancy::SemModulo)) => {
+            emitir(json!({"evento": "sem-modulo"}))
+        }
         Err(erro) => return Err(erro.to_string()),
     }
     Ok(())
@@ -164,10 +179,31 @@ mod testes {
 
     #[test]
     fn criar_conta_com_e_sem_dono() {
-        let com = Cli::try_parse_from(["novasce-helper", "criar-conta", "--nome", "Luan Silva", "--email", "luan@novasce.com", "--dono", "u1"]).unwrap();
+        let com = Cli::try_parse_from([
+            "novasce-helper",
+            "criar-conta",
+            "--nome",
+            "Luan Silva",
+            "--email",
+            "luan@novasce.com",
+            "--dono",
+            "u1",
+        ])
+        .unwrap();
         assert!(matches!(com.comando, Comando::CriarConta { dono: Some(ref d), .. } if d == "u1"));
-        let sem = Cli::try_parse_from(["novasce-helper", "criar-conta", "--nome", "Luan", "--email", "luan@novasce.com"]).unwrap();
-        assert!(matches!(sem.comando, Comando::CriarConta { dono: None, .. }));
+        let sem = Cli::try_parse_from([
+            "novasce-helper",
+            "criar-conta",
+            "--nome",
+            "Luan",
+            "--email",
+            "luan@novasce.com",
+        ])
+        .unwrap();
+        assert!(matches!(
+            sem.comando,
+            Comando::CriarConta { dono: None, .. }
+        ));
     }
 
     #[test]
@@ -180,7 +216,10 @@ mod testes {
     #[test]
     fn os_outros_comandos_existem() {
         for comando in ["registrar", "time", "preparar-sede", "concluir"] {
-            assert!(Cli::try_parse_from(["novasce-helper", comando]).is_ok(), "{comando}");
+            assert!(
+                Cli::try_parse_from(["novasce-helper", comando]).is_ok(),
+                "{comando}"
+            );
         }
     }
 }

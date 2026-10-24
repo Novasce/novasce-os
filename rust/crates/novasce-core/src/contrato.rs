@@ -82,7 +82,10 @@ impl fmt::Debug for RespostaDaEspera {
         f.debug_struct("RespostaDaEspera")
             .field("status", &self.status)
             .field("machine_id", &self.machine_id)
-            .field("machine_token", &self.machine_token.as_ref().map(|_| "(oculto)"))
+            .field(
+                "machine_token",
+                &self.machine_token.as_ref().map(|_| "(oculto)"),
+            )
             .finish()
     }
 }
@@ -284,7 +287,11 @@ impl ErroNest {
     pub fn mensagem(&self) -> String {
         match &self.message {
             Value::String(texto) => texto.clone(),
-            Value::Array(lista) => lista.iter().filter_map(Value::as_str).collect::<Vec<_>>().join("; "),
+            Value::Array(lista) => lista
+                .iter()
+                .filter_map(Value::as_str)
+                .collect::<Vec<_>>()
+                .join("; "),
             outro => outro.to_string(),
         }
     }
@@ -397,7 +404,8 @@ mod testes {
 
     #[test]
     fn chamados_com_numero_e_resposta_tipada() {
-        let aberto: ChamadoAberto = serde_json::from_value(json!({"ticketId": "c1", "number": 128})).unwrap();
+        let aberto: ChamadoAberto =
+            serde_json::from_value(json!({"ticketId": "c1", "number": 128})).unwrap();
         assert_eq!(aberto.number, 128);
         let lista: Vec<Chamado> = serde_json::from_value(json!([{
             "id": "c1", "number": 128, "title": "Impressora", "status": "REVIEW",
@@ -420,10 +428,14 @@ mod testes {
 
     #[test]
     fn erro_do_nest_com_texto_ou_lista() {
-        let um: ErroNest = serde_json::from_value(json!({"statusCode": 403, "message": "Prazo encerrado"})).unwrap();
+        let um: ErroNest =
+            serde_json::from_value(json!({"statusCode": 403, "message": "Prazo encerrado"}))
+                .unwrap();
         assert_eq!(um.mensagem(), "Prazo encerrado");
-        let lista: ErroNest =
-            serde_json::from_value(json!({"statusCode": 400, "message": ["userId vazio", "role inválido"]})).unwrap();
+        let lista: ErroNest = serde_json::from_value(
+            json!({"statusCode": 400, "message": ["userId vazio", "role inválido"]}),
+        )
+        .unwrap();
         assert_eq!(lista.mensagem(), "userId vazio; role inválido");
     }
 }
