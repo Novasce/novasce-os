@@ -1,0 +1,22 @@
+.nv-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: 600 14px/1 var(--nv-fonte);
+  padding: 11px 16px;
+  border-radius: var(--nv-raio);
+  border: 1px solid var(--nv-linha-2);
+  background: var(--nv-papel);
+  color: var(--nv-tinta);
+  cursor: pointer;
+  transition:
+    background-color var(--nv-troca) var(--nv-curva),
+    border-color var(--nv-troca) var(--nv-curva),
+    color var(--nv-troca) var(--nv-curva);
+}
+.nv-botao:hover { background: var(--nv-teal-suave); border-color: var(--nv-teal); }
+.nv-botao:focus-visible { outline: 2px solid var(--nv-teal); outline-offset: 3px; }
+.nv-botao--primario { background: var(--nv-teal); border-color: var(--nv-teal); color: var(--nv-sobre-teal); }
+.nv-botao--primario:hover { background: var(--nv-teal-escuro); border-color: var(--nv-teal-escuro); }
+.nv-botao:disabled { background: var(--nv-superficie); border-color: var(--nv-linha); color: var(--nv-apagado); cursor: not-allowed; }
