@@ -2,72 +2,52 @@
 
 ## TLDR
 
-- Sistema da máquina da sede: servidor dos agentes e computador do time, no mesmo disco.
-- É o Aurora (KDE, Universal Blue, Fedora) com driver NVIDIA aberto, mais a marca e os serviços da Novasce. A receita inteira está neste repositório.
-- Atualização semanal, montada na própria máquina. Fica pronta e só entra quando alguém reinicia. Se der errado, `sudo bootc rollback` volta para a versão anterior.
-- Nenhum segredo entra na imagem. O cofre dos agentes é criado na máquina.
+- O sistema Linux da Novasce, para a máquina da sede e para os notebooks do time, inclusive para quem nunca usou Linux.
+- É o Aurora (KDE, Fedora, Universal Blue) montado como imagem bootc, com a marca, os papéis (sede e notebook), a conta Sede com a Sala, os agentes e os apps da casa.
+- Duas imagens da mesma receita: `ghcr.io/novasce/novasce-os:stable-nvidia` (sede) e `:stable-padrao` (notebooks), mais `AAAA.MM.DD.N-<variante>` por versão. Montadas no GitHub Actions, assinadas com cosign.
+- A máquina só aplica imagem assinada pela casa, atualiza uma vez por semana e nunca reinicia sozinha. Para voltar: `sudo bootc rollback`.
+- Repositório e imagem são públicos: nenhum segredo e nenhum conteúdo privado entram aqui.
 
 ## O que tem aqui
 
-| Arquivo | Para quê |
+| Pasta ou arquivo | Para quê |
 |---|---|
-| `Containerfile` | A receita: base Aurora + `system_files/` + `build.sh` |
-| `build.sh` | Pacotes, marca (papel de parede, boot, abertura, tema, nome) e initramfs |
-| `marca/` | Cata-vento oficial (cópia de `design/novasce/marca-vetor`) e o papel de parede |
-| `system_files/` | Arquivos copiados para a raiz: usuário `agentes`, serviços, scripts, tela de login |
+| `Containerfile` | A receita: estágio `apps` (Rust e Tauri sobre a mesma base) e estágio final |
+| `build_files/` | Um script por assunto, rodados em ordem na montagem |
+| `system_files/` | Copiado para `/`: unidades, polkit, marca, KDE, Sala, arquivos da sede |
+| `marca/` | Cata-vento oficial, papel de parede teal aprovado e as peças do boot |
+| `rust/` | `novasce-core` (contrato com o Tenancy), `novasce-sinal` (serviço) e `novasce-helper` (root pelo pkexec) |
+| `ui/` | Tokens da marca e componentes React dos apps da casa |
+| `apps/preparar/` | Preparar esta máquina (Tauri 2) |
+| `notas/` | Notas de versão públicas, lidas pelo aviso de atualização |
+| `tests/imagem.sh` | Confere a imagem montada, no CI |
+| `docs/roteiro-sede.md` | O teste na sede, passo a passo |
 
-## Instalar (uma vez, sentado na máquina)
+## Instalar
 
-**Antes:** pendrive de 8 GB ou mais. A senha do disco fica no gerenciador de senhas, nunca no brain.
-
-1. **BIOS:** TPM ligado (Intel PTT ou AMD fTPM), Secure Boot ligado, senha de administrador no BIOS.
-2. **Pendrive:** baixar o Aurora em getaurora.dev, na versão **NVIDIA** (placas GTX 16xx, RTX 20xx ou mais novas), e gravar com o Fedora Media Writer.
-3. **Instalação:** usar o disco inteiro e apagar tudo. Marcar **Criptografar meus dados**. Criar o seu usuário como administrador.
-4. **Primeiro boot:** se aparecer a tela azul do MOK, escolher *Enroll MOK* → *Continue* → senha `universalblue` → reiniciar. Conferir com `nvidia-smi`.
-5. **Trazer a receita** (num terminal da máquina):
-
-   ```sh
-   sudo mkdir -m 0700 -p /var/lib/novasce-os
-   sudo ssh-keygen -q -t ed25519 -N "" -C "sede: novasce-os" -f /var/lib/novasce-os/chave-github
-   sudo cat /var/lib/novasce-os/chave-github.pub
-   ```
-
-   Adicionar essa chave em github.com/Novasce/novasce-os → Settings → Deploy keys, **sem** "Allow write access". Depois:
-
-   ```sh
-   SSH="ssh -i /var/lib/novasce-os/chave-github -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-   sudo git -c core.sshCommand="$SSH" clone git@github.com:Novasce/novasce-os.git /var/lib/novasce-os/repo
-   sudo git -C /var/lib/novasce-os/repo config core.sshCommand "$SSH"
-   sudo bash /var/lib/novasce-os/repo/system_files/usr/libexec/novasce/atualizar
-   systemctl reboot
-   ```
-
-6. **Agentes:** `sudo novasce-primeiro-uso`. Ele confere a máquina, clona brain e executor, instala o Claude, roda os testes e imprime os passos interativos que faltam.
-7. **Disco pelo TPM:** `ujust setup-luks-tpm-unlock`, para a máquina ligar sem pedir a senha do disco.
-8. **Contas do time:** Configurações do Sistema → Usuários → Adicionar, tipo **Padrão** (nunca administrador).
-
-## Conferir depois de instalar
-
-- `bootc status` mostra `localhost/novasce-os:latest` como booted.
-- `nvidia-smi` mostra a RTX 2060. `mokutil --sb-state` diz *SecureBoot enabled*.
-- Boot, abertura, tela de login e área de trabalho com a marca. "Sobre este sistema" diz Novasce OS.
-- Reiniciar não pede a senha do disco.
-- `systemctl status novasce-assistente.timer` ativo, e `state/runner.log` do executor crescendo.
-- Uma conta do time não consegue `sudo`.
+O passo a passo, com o resultado esperado em cada passo, está em [docs/roteiro-sede.md](docs/roteiro-sede.md). Em resumo: pendrive com o Aurora, `sudo bootc switch --enforce-container-sigpolicy ghcr.io/novasce/novasce-os:stable-nvidia` (ou `stable-padrao`), reiniciar e seguir o Preparar esta máquina.
 
 ## Dia a dia
 
 | Quero | Comando |
 |---|---|
-| Atualizar agora | `sudo systemctl start novasce-atualizar` e reiniciar quando ninguém estiver usando |
-| Ver quem está logado antes de reiniciar | `loginctl list-sessions` |
-| Ver o que está rodando e o que entra no próximo boot | `bootc status` |
+| Ver o que roda e o que entra no próximo boot | `rpm-ostree status` |
+| Buscar a versão nova agora | `sudo systemctl start uupd.service` |
 | Voltar para a versão anterior | `sudo bootc rollback` e reiniciar |
-| Log da atualização | `journalctl -u novasce-atualizar` |
+| Registrar a máquina no Tenancy pelo terminal | `sudo novasce-sinal pair` |
+| Mandar o sinal agora | `sudo systemctl start novasce-sinal` |
+| Log do sinal | `journalctl -u novasce-sinal` |
+| Preparar os agentes (só na sede) | `sudo novasce-primeiro-uso` |
 | Log dos agentes | `journalctl -u novasce-assistente` e `state/` do executor |
 
-## Fora da v0
+## Desenvolver
 
-- Claude e Codex para as contas do time.
-- Apps Mac da casa (Tenancy macOS, Sessões, Assuntos): não rodam em Linux. O Tenancy entra pelo navegador.
-- Acesso de fora da rede da sede.
+- Rust: `cd rust && cargo test -p <crate>`.
+- Web: `npm install` na raiz e `npm test -w ui` ou `npm test -w apps/preparar`.
+- A imagem só é montada no CI (`.github/workflows/build.yml`). O CI também roda shellcheck, clippy, os testes e o lado Rust do Preparar.
+
+## Fora do M1
+
+- Começar, Ajuda, Sincronizar, Voz, a volta à Sala e o aviso de atualização: M3.
+- Os quatro sinais da barra (falar, nuvem, senhas, ajuda) e o Começar no dock: M3.
+- Sala, Telas e Máquinas no Tenancy: M2.
