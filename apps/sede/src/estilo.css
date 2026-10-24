@@ -1,0 +1,9 @@
+html, body, #raiz { margin: 0; height: 100%; background: transparent; font: 400 14px/1.45 Inter, sans-serif; color: var(--ink); }
+.veu { position: fixed; inset: 0; background: rgba(10, 37, 40, .55); display: grid; place-items: center; }
+.cartao-volta { width: 500px; background: #fff; border-radius: 16px; padding: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.cartao-volta h1 { margin: 0; font: 700 24px Inter, sans-serif; }
+.cartao-volta p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink2); }
+.canto { box-sizing: border-box; width: 360px; height: 72px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; box-shadow: 0 10px 30px rgba(0, 0, 0, .18); }
+.selo { width: 28px; height: 28px; border-radius: 6px; background: var(--teal); display: grid; place-items: center; flex: none; }
+.canto-texto { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.canto-acao { min-height: 30px; display: flex; align-items: center; font-size: 12px; color: var(--muted); }
