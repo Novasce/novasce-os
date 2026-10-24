@@ -1,0 +1,15 @@
+#!/usr/bin/bash
+# Primeiro uso de claude, codex ou gemini: instala só para a pessoa, em ~/.local/bin, sem sudo.
+# Depois disso o ~/.local/bin vem antes de /usr/bin no PATH e este script não roda mais.
+set -euo pipefail
+nome=$(basename "$0")
+local_bin="$HOME/.local/bin/$nome"
+if [ -x "$local_bin" ]; then exec "$local_bin" "$@"; fi
+echo "Primeiro uso do $nome neste computador. Instalando só para você, leva um minuto." >&2
+case "$nome" in
+  claude) curl -fsSL https://claude.ai/install.sh | bash ;;
+  codex) npm install -g --prefix "$HOME/.local" @openai/codex ;;
+  gemini) npm install -g --prefix "$HOME/.local" @google/gemini-cli ;;
+  *) echo "Ferramenta desconhecida: $nome" >&2; exit 2 ;;
+esac
+exec "$local_bin" "$@"
