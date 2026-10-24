@@ -1,0 +1,4 @@
+# As assinaturas da Novasce ficam no GHCR, junto da imagem (cosign).
+docker:
+  ghcr.io/novasce/novasce-os:
+    use-sigstore-attachments: true
