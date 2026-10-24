@@ -1,0 +1,45 @@
+#!/usr/bin/bash
+# Abre a Sala em tela cheia na conta Sede. Em qualquer outra conta, sai.
+# Se o Tenancy ainda não responde, mostra a página local "A Sala chega com o
+# Tenancy" e confere de novo a cada minuto. Se o Chrome fechar, abre de novo.
+# O sistema não guarda token de tela: a página /sala pareia e guarda o token
+# dela. O perfil abaixo persiste entre boots para a TV não pedir código de novo.
+set -uo pipefail
+
+[ "$(id -un)" = sede ] || exit 0
+[ "$(cat /etc/novasce/papel 2>/dev/null)" = sede ] || exit 0
+
+APP=com.google.Chrome
+RESERVA=file:///usr/share/novasce/sala-reserva/index.html
+PERFIL="$HOME/.var/app/$APP/sala"
+CHROME=
+
+abrir() {
+  flatpak run "$APP" --kiosk --no-first-run --no-default-browser-check --noerrdialogs \
+    --disable-session-crashed-bubble --hide-crash-restore-bubble \
+    --user-data-dir="$PERFIL" "$1" &
+  CHROME=$!
+}
+
+fechar() {
+  flatpak kill "$APP" 2>/dev/null
+  wait "$CHROME" 2>/dev/null
+}
+
+# No primeiro boot o Chrome ainda está sendo instalado (flatpak-preinstall).
+until flatpak info "$APP" >/dev/null 2>&1; do sleep 15; done
+
+while true; do
+  if /usr/bin/novasce-sinal sala-pronta; then
+    abrir "$(/usr/bin/novasce-sinal url sala)"
+    wait "$CHROME"
+  else
+    abrir "$RESERVA"
+    until /usr/bin/novasce-sinal sala-pronta; do
+      sleep 60
+      kill -0 "$CHROME" 2>/dev/null || abrir "$RESERVA"
+    done
+    fechar
+  fi
+  sleep 2
+done
