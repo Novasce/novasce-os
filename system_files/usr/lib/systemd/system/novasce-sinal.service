@@ -1,0 +1,14 @@
+[Unit]
+Description=Novasce OS · sinal da máquina para o Tenancy
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/novasce/maquina.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/novasce-sinal heartbeat
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/novasce

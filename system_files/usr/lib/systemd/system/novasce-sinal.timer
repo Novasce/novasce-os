@@ -1,0 +1,11 @@
+[Unit]
+Description=Novasce OS · sinal diário e no boot
+
+[Timer]
+OnBootSec=3min
+OnCalendar=daily
+RandomizedDelaySec=20min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
