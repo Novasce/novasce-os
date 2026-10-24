@@ -3,3 +3,4 @@ pub mod atualizacao;
 pub mod busca;
 pub mod janela;
 pub mod manha;
+pub mod partida;

@@ -6,6 +6,7 @@ mod servico {
     use novasce_barra::manha::{
         self, deve_abrir, dia_de_trabalho, tenancy_responde, EstadoManha, AVISO_FORA,
     };
+    use novasce_barra::partida::esperar_config;
     use novasce_casa::abrir::{abrir_tenancy, rodar_solto};
     use novasce_casa::caminhos::Caminhos;
     use novasce_casa::chaveiro::{Chaveiro, ChaveiroSistema, CONTA_TENANCY};
@@ -540,7 +541,11 @@ mod servico {
     pub fn rodar() {
         let c = Caminhos::da_pessoa();
         let casa = ConfigCasa::carregar();
-        let config = Config::carregar().expect("config.toml da máquina");
+        // Máquina ainda não preparada: espera em silêncio em vez de cair e deixar o systemd
+        // reiniciar o serviço a cada 10 s.
+        let config = esperar_config(Config::carregar, std::thread::sleep, |linha| {
+            eprintln!("novasce-barra: {linha}")
+        });
         let ctx = Ctx {
             conta_sede: conta_atual() == casa.sede.conta,
             web: config.tenancy_web.clone(),
