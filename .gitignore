@@ -1,0 +1,7 @@
+/rust/target/
+/apps/*/src-tauri/target/
+/apps/*/src-tauri/gen/
+/apps/*/dist/
+node_modules/
+cosign.key
+*.key
