@@ -227,3 +227,39 @@ grep IMAGE_VERSION /usr/lib/os-release
 | A Sala continua pareada depois de reiniciar (perfil persistente do Chrome) | depende da página `/sala` do M2 |
 | A tela da Sede não apaga (`powerdevilrc`) | precisa da sessão |
 | A versão no `rpm-ostree status --json` | só existe numa máquina com deployments |
+
+## Depois do M3 publicado
+
+Piloto: o Eduardo, no computador da empresa. Cada passo diz o que fazer e o que deve aparecer.
+
+| # | O que fazer | O que deve aparecer |
+|---|---|---|
+| 1 | Entrar na conta pessoal pela primeira vez | O Começar abre sozinho no passo 1, com um código |
+| 2 | Entrar no Tenancy pelo botão e aprovar o código | O seu nome no alto e o primeiro terço do contorno fechado |
+| 3 | Marcar Claude e clicar em Instalar e entrar | "Instalando o Claude Code", depois o login do Claude no navegador |
+| 4 | Aprovar o código no GitHub e clicar em Criar meu brain | `<login>-brain` privado no GitHub e a tela dos espaços |
+| 5 | Trazer o Studio | Pasta `~/Espaços/Studio` e "Pronto. Os três passos estão feitos." |
+| 6 | Conectar o Google no fim | Pasta "Novasce OS/Documentos" no Drive com o que estava em Documentos |
+| 7 | Fechar o Começar e entrar de novo | O Começar não abre; ele saiu do dock; volta pela Ajuda |
+| 8 | Sair e entrar na manhã seguinte | O Meu dia do Tenancy abre uma vez |
+| 9 | Clicar no "?" com o Dolphin na frente | A Central com "Nesta tela · Arquivos" |
+| 10 | Pedir ajuda com print | "Chamado aberto" e o chamado no Tenancy com print INTERNAL e dados da máquina |
+| 11 | Responder o chamado no Tenancy com tipo Solução | Aviso "A Novasce respondeu" com Resolveu e Ainda não |
+| 12 | Desligar o Wi-Fi e pedir ajuda | "O chamado não foi enviado", e ele sai sozinho ao religar |
+| 13 | Escrever uma nota no Obsidian | Em até 3 min, a nuvem verde com "salvos há N min" |
+| 14 | Pôr um token falso numa nota | Nuvem laranja dizendo que a nota ficou só neste computador |
+| 15 | Voz: Tarefa 35 inteira | Números em `docs/medicoes/voz.md` e decisão aplicada |
+| 16 | Conta Sede: abrir o Navegador da Sede, logar num site e não mexer 10 min | Aviso com 30 s, Sala em tela cheia; o navegador abre de novo sem o login |
+| 17 | Conta pessoal na sede: não mexer 5 min | A conta tranca e a TV volta à Sala; ao entrar de novo, os apps continuam abertos |
+| 18 | Montar uma versão de teste e deixar pronta | Aviso uma vez; "Depois" deixa o sinal "x pronta"; na Sede, o canto com Reiniciar só fora de rodada |
+| 19 | Tela de login | Cartão com o QR no canto; o celular abre `/os/esqueci?m=…` |
+| 20 | KDE: velocidade de animação em "Instantânea" e abrir o Começar | O terço aparece pintado, sem movimento |
+
+Premissas para conferir aqui (do plano do M3): fundo por máquina em `/etc/plasmalogin.conf.d/`, KWallet abrindo sozinho, painel da voz como camada sem roubar foco, Chrome Flatpak e título "Sala da Novasce", acesso do OAuth App aos repositórios dos espaços, cliente do Google fora do modo de teste, `Meta+Espaço` livre.
+
+Conferências que a execução do M3 levantou (não dava para provar no Mac):
+
+- QR do login: o `rsvg-convert` carrega o papel de parede de `/usr/share/wallpapers/...` dentro do SVG gravado em `/var/lib/novasce-login/`? Se o fundo sair sem o papel, copiar o papel para a mesma pasta do SVG.
+- Sinal de senhas: o clique esquerdo abre o Bitwarden e o menu com o Cofre do time fica no clique direito (o `ksni` 0.2 não abre menu no clique esquerdo).
+- Canto "atualização pronta" na Sede: 72 px de altura; com o motivo do botão em duas linhas o texto encosta na borda. Se incomodar na TV, subir para 88 px.
+- Voz: preencher `docs/medicoes/voz.md` (Tarefa 35) antes de prometer "qualquer campo".
