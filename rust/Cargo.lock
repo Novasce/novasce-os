@@ -800,6 +800,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "novasce-chamados"
+version = "0.1.0"
+dependencies = [
+ "mockito",
+ "novasce-casa",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "novasce-core"
 version = "0.1.0"
 dependencies = [
