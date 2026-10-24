@@ -1,0 +1,37 @@
+html, body, #raiz { height: 100%; margin: 0; }
+body { background: #fff; color: var(--ink); font: 400 14px/1.45 Inter, sans-serif; -webkit-font-smoothing: antialiased; }
+.janela-comecar { display: flex; height: 100vh; position: relative; overflow: hidden; }
+.conteudo { flex: 1; min-width: 0; padding: 26px 32px; display: flex; flex-direction: column; gap: 16px; overflow: auto; }
+.quem { min-height: 36px; display: flex; flex-direction: column; font-size: 13px; color: var(--muted); }
+.quem b { color: var(--ink); font-size: 15px; }
+.resumo-passos { display: flex; align-items: center; gap: 14px; font: 600 15px/1.35 Inter, sans-serif; }
+.resumo-passos span { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.rodape-nav { margin-top: auto; font-size: 12px; color: var(--muted); }
+.etq.teal { color: var(--teal); }
+.titulo-passo { margin: 0; font: 600 23px/1.3 Inter, sans-serif; }
+.grid-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.linha-codigo { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.codigo { font-size: 30px; font-weight: 600; letter-spacing: .06em; color: var(--teal-deep); min-width: 11ch; }
+.link { background: none; border: 0; padding: 0; color: var(--teal); font: 600 13px Inter, sans-serif; cursor: pointer; text-align: left; }
+.botao-ajuda { position: absolute; right: 14px; top: 12px; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line2); background: #fff; color: var(--teal); font: 600 14px Inter, sans-serif; cursor: pointer; }
+.botao-ajuda:hover { background: var(--teal-soft); }
+.acoes { margin-top: auto; display: flex; gap: 8px; align-items: center; }
+.estado-centro { margin: auto; width: 640px; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 34px; display: flex; flex-direction: column; gap: 12px; }
+.estado-centro h1 { margin: 0; font: 700 26px/1.2 Inter, sans-serif; }
+.estado-centro p { margin: 0; font-size: 16px; color: var(--ink2); }
+.ia-cartao { cursor: pointer; text-align: left; font: inherit; }
+.ia-cartao[aria-pressed="true"] { border-color: var(--teal); box-shadow: inset 0 0 0 .5px var(--teal); background: #F4FAF9; }
+.boas { display: flex; flex: 1; min-height: 0; margin: -26px -32px; }
+.boas-lado { width: 300px; flex: none; background: var(--teal); color: #F5F5F7; padding: 34px 28px; display: flex; flex-direction: column; gap: 16px; }
+.boas-lado h1 { margin: 0; font: 700 28px/1.15 Inter, sans-serif; }
+.boas-lado p { margin: 0; font-size: 15px; opacity: .8; }
+.boas-corpo { flex: 1; padding: 28px 32px; display: flex; flex-direction: column; gap: 12px; }
+.cartao-linha { flex-direction: row; align-items: center; gap: 16px; }
+.cartao-linha .num { font: 600 22px "JetBrains Mono", monospace; color: var(--teal); }
+.tabela-volta { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 15px; }
+.tabela-volta > div { display: grid; grid-template-columns: 1fr 260px; padding: 12px 18px; align-items: center; border-top: 1px solid var(--line); min-height: 48px; }
+.tabela-volta > div:first-child { border-top: 0; }
+.barra { flex: 1; height: 8px; border-radius: 4px; background: var(--line); display: flex; }
+.barra > span { background: var(--teal); border-radius: 4px; transition: width var(--dur-estado) var(--curva); }
+.descobertas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 13px; color: var(--ink2); }
