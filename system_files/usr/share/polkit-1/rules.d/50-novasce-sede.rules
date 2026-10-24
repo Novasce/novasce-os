@@ -1,0 +1,6 @@
+// Novasce OS: deixa a conta pessoal na sede devolver a TV para a sessão Sede (loginctl activate).
+polkit.addRule(function (action, subject) {
+  if (action.id == "org.freedesktop.login1.chvt") {
+    return polkit.Result.YES;
+  }
+});

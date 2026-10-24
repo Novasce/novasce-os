@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Navegador da Sede
+Comment=Esquece tudo ao voltar à Sala
+Exec=/usr/bin/novasce-navegador-sede %U
+Icon=com.google.Chrome
+Categories=Network;WebBrowser;
+StartupWMClass=chrome-novasce-navegador-sede
