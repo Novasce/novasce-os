@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ChatGPT
+Comment=Conversar com o ChatGPT, com a sua assinatura
+Exec=/usr/libexec/novasce/abrir-web chatgpt
+Icon=novasce-chatgpt
+Categories=Office;
+StartupWMClass=chrome-chatgpt.com__-Default

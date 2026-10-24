@@ -1,0 +1,3 @@
+[Flatpak Preinstall com.bitwarden.desktop]
+Branch=stable
+IsRuntime=false

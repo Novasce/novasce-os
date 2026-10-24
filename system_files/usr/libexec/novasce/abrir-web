@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+# Abre um app web da casa no Chrome, como janela própria.
+# Uso: abrir-web tenancy|material|claude|chatgpt|gemini|whatsapp
+set -euo pipefail
+
+URL=$(/usr/bin/novasce-sinal url "${1:?diga qual app}")
+if flatpak info com.google.Chrome >/dev/null 2>&1; then
+  exec flatpak run com.google.Chrome --no-default-browser-check --app="$URL"
+fi
+# No primeiro boot o Chrome ainda está sendo instalado: abre no navegador padrão.
+exec xdg-open "$URL"

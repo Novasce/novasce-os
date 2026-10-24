@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Preparar esta máquina
+Comment=Papel, rede, registro no Tenancy e de quem é
+Exec=/usr/libexec/novasce/abrir-preparar --sempre
+Icon=novasce-preparar
+Categories=System;Settings;

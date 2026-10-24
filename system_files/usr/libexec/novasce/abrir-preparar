@@ -1,0 +1,12 @@
+#!/usr/bin/bash
+# Abre o Preparar esta máquina. No login, só abre para administrador (wheel) e só
+# enquanto a máquina não foi preparada. Pelo menu (--sempre), abre direto.
+set -euo pipefail
+
+if [ "${1:-}" != "--sempre" ]; then
+  [ -e /etc/novasce/preparado ] && exit 0
+  id -nG | tr ' ' '\n' | grep -qx wheel || exit 0
+fi
+# WebKitGTK com placa NVIDIA: sem isto a janela pode abrir em branco.
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
+exec /usr/bin/novasce-preparar

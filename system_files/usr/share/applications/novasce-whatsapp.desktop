@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=WhatsApp
+Comment=WhatsApp Web
+Exec=/usr/libexec/novasce/abrir-web whatsapp
+Icon=novasce-whatsapp
+Categories=Network;Chat;
+StartupWMClass=chrome-web.whatsapp.com__-Default
