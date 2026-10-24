@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Começar
+Comment=Liga o Tenancy, a sua IA e o seu brain
+Exec=/usr/bin/novasce-comecar
+Icon=novasce-logo
+Categories=System;
+StartupWMClass=org.novasce.comecar
