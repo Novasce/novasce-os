@@ -7,6 +7,7 @@ pub mod notas;
 pub mod token;
 pub mod tenancy;
 pub mod sistema;
+pub mod registro;
 
 /// Versão do núcleo, a mesma do Cargo.
 pub const VERSAO: &str = env!("CARGO_PKG_VERSION");
