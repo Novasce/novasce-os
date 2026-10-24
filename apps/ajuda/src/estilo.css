@@ -41,3 +41,8 @@ body { background: #fff; color: var(--ink); font: 400 14px/1.45 Inter, sans-seri
 .marcas { display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--ink2); }
 .marcas label { display: flex; gap: 8px; align-items: center; }
 .acoes-pedir { margin-top: auto; display: flex; gap: 8px; }
+.grade-recomendados { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.esqueci { display: flex; gap: 28px; padding: 34px; border-radius: 8px; border: 1px solid var(--line); margin: auto; width: 620px; box-sizing: border-box; }
+.qr { width: 156px; height: 156px; flex: none; outline: 1px solid var(--line2); background: #fff; }
+.esqueci-texto { display: flex; flex-direction: column; gap: 12px; }
+.esqueci-texto h2 { margin: 0; font: 700 22px Inter, sans-serif; }
