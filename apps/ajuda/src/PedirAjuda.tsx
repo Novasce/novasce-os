@@ -11,6 +11,8 @@ export function PedirAjuda() {
   const [comPrint, setComPrint] = useState(true);
   const [fase, setFase] = useState<Fase>("escrevendo");
   const [aviso, setAviso] = useState("");
+  const [tentando, setTentando] = useState(false);
+  const [semConexao, setSemConexao] = useState(false);
 
   useEffect(() => {
     void ponte.prepararPedido().then((p) => {
@@ -27,6 +29,20 @@ export function PedirAjuda() {
     if (r.tipo === "guardado") return setFase("guardado");
     setFase("escrevendo");
     setAviso(r.mensagem ?? "O chamado não foi aberto.");
+  };
+
+  const tentarAgora = async () => {
+    setTentando(true);
+    setSemConexao(false);
+    let sairam = 0;
+    try {
+      sairam = await ponte.tentarAgora();
+    } catch {
+      sairam = 0;
+    }
+    setTentando(false);
+    if (sairam > 0) return void ponte.fecharJanela("pedir");
+    setSemConexao(true);
   };
 
   const falar = async () => {
@@ -53,8 +69,12 @@ export function PedirAjuda() {
       <section className="pedir">
         <h1>O chamado não foi enviado</h1>
         <p className="resumo">A internet caiu antes de chegar à Novasce. O pedido ficou guardado neste computador e sai sozinho quando a conexão voltar.</p>
+        {/* A linha existe sempre, vazia, com a altura reservada: a resposta aparece sem mexer em nada. */}
+        <span className={`status ${semConexao ? "alerta" : ""}`} aria-live="polite">
+          {tentando ? "Tentando enviar de novo" : semConexao ? "Ainda sem conexão. O pedido continua guardado e sai sozinho quando a internet voltar." : ""}
+        </span>
         <div className="acoes-pedir">
-          <Botao onClick={async () => { if ((await ponte.tentarAgora()) > 0) void ponte.fecharJanela("pedir"); }}>Tentar agora</Botao>
+          <Botao desligado={tentando ? "Tentando." : undefined} onClick={() => void tentarAgora()}>Tentar agora</Botao>
           <Botao onClick={() => void ponte.fecharJanela("pedir")}>Fechar</Botao>
         </div>
       </section>
