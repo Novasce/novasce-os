@@ -2,6 +2,8 @@
 //! leituras do sistema. Os binários e os apps em Tauri usam só o que está aqui.
 
 pub mod config;
+pub mod contrato;
+pub mod notas;
 
 /// Versão do núcleo, a mesma do Cargo.
 pub const VERSAO: &str = env!("CARGO_PKG_VERSION");
