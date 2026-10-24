@@ -3,5 +3,6 @@
 pub mod dados_maquina;
 pub mod esqueci;
 pub mod fila;
+pub mod login;
 pub mod pedido;
 pub mod respostas;
