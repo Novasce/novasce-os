@@ -1,5 +1,6 @@
 //! Peças compartilhadas dos apps e serviços da casa (M3).
 pub mod abrir;
+pub mod arquivo_privado;
 pub mod caminhos;
 pub mod chamado;
 pub mod chaveiro;

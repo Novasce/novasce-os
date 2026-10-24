@@ -1,4 +1,5 @@
 //! As IAs da pessoa: app web para conversar, CLI por pessoa para trabalhar no brain.
+use novasce_casa::arquivo_privado;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Command;
@@ -124,48 +125,59 @@ pub fn instalar(ia: Ia, casa: &Path) -> Result<(), String> {
     }
 }
 
-pub fn comando_ligar_claude(url_mcp: &str, chave: &str) -> Vec<String> {
-    [
-        "claude",
-        "mcp",
-        "add",
-        "--transport",
-        "http",
-        "--scope",
-        "user",
-        "tenancy",
-        url_mcp,
-        "--header",
-    ]
-    .iter()
-    .map(|s| s.to_string())
-    .chain([format!("Authorization: Bearer {chave}")])
-    .collect()
+/// A entrada do Tenancy no `mcpServers` do Claude Code, no mesmo formato que o próprio
+/// `claude mcp add --transport http --scope user` grava no `~/.claude.json`.
+///
+/// Não passamos pelo `claude mcp add`: ele só aceita o cabeçalho com a chave na linha de comando
+/// (`--header`, e `add-json` leva o JSON inteiro), e sem `hidepid` qualquer conta da máquina lê
+/// /proc/<pid>/cmdline. Escrevemos o arquivo da pessoa nós mesmos, 0600, e o resto dele fica como está.
+pub fn entrada_mcp_claude(url_mcp: &str, chave: &str) -> serde_json::Value {
+    serde_json::json!({
+        "type": "http",
+        "url": url_mcp,
+        "headers": { "Authorization": format!("Bearer {chave}") },
+    })
 }
 
-/// Para "Mostrar o comando por trás": a chave vira ••••.
-pub fn mascarar(argv: &[String]) -> String {
-    argv.iter()
-        .map(|a| match a.find("Bearer ") {
-            Some(i) => format!("\"{}Bearer ••••\"", &a[..i]),
-            None => a.clone(),
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
+/// Para "Mostrar o comando por trás": o que de fato é gravado, com a chave vista como ••••.
+pub fn mascarar(entrada: &serde_json::Value) -> String {
+    let mut m = entrada.clone();
+    if let Some(cabecalhos) = m.get_mut("headers").and_then(|h| h.as_object_mut()) {
+        for valor in cabecalhos.values_mut() {
+            *valor = serde_json::json!("Bearer ••••");
+        }
+    }
+    format!("~/.claude.json: mcpServers.tenancy = {m}")
+}
+
+fn arquivo_do_claude(casa: &Path) -> std::path::PathBuf {
+    casa.join(".claude.json")
 }
 
 pub fn ligar_claude(casa: &Path, url_mcp: &str, chave: &str) -> Result<(), String> {
-    let argv = comando_ligar_claude(url_mcp, chave);
-    let bin = casa.join(".local/bin/claude");
-    let s = Command::new(bin)
-        .args(&argv[1..])
-        .output()
-        .map_err(|e| e.to_string())?;
-    if s.status.success() {
-        Ok(())
-    } else {
-        Err(String::from_utf8_lossy(&s.stderr).trim().to_string())
+    ligar_claude_em(&arquivo_do_claude(casa), url_mcp, chave)
+}
+
+fn ligar_claude_em(arquivo: &Path, url_mcp: &str, chave: &str) -> Result<(), String> {
+    // O ~/.claude.json guarda o estado inteiro do Claude Code: arquivo que não lemos direito
+    // não se reescreve, senão a pessoa perde o que já tinha.
+    let mut v: serde_json::Value = match std::fs::read_to_string(arquivo) {
+        Ok(t) if t.trim().is_empty() => serde_json::json!({}),
+        Ok(t) => serde_json::from_str(&t)
+            .ok()
+            .filter(serde_json::Value::is_object)
+            .ok_or(
+                "O arquivo do Claude Code (~/.claude.json) não está legível. Nada foi mudado.",
+            )?,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => serde_json::json!({}),
+        Err(e) => return Err(e.to_string()),
+    };
+    if !v["mcpServers"].is_object() {
+        v["mcpServers"] = serde_json::json!({});
     }
+    v["mcpServers"]["tenancy"] = entrada_mcp_claude(url_mcp, chave);
+    let json = serde_json::to_vec_pretty(&v).map_err(|e| e.to_string())?;
+    arquivo_privado::gravar(arquivo, &json).map_err(|e| e.to_string())
 }
 
 pub fn ligar_gemini(settings: &Path, url_mcp: &str, chave: &str) -> std::io::Result<()> {
@@ -177,10 +189,7 @@ pub fn ligar_gemini(settings: &Path, url_mcp: &str, chave: &str) -> std::io::Res
         v["mcpServers"] = serde_json::json!({});
     }
     v["mcpServers"]["tenancy"] = serde_json::json!({ "httpUrl": url_mcp, "headers": { "Authorization": format!("Bearer {chave}") } });
-    if let Some(p) = settings.parent() {
-        std::fs::create_dir_all(p)?;
-    }
-    std::fs::write(settings, serde_json::to_vec_pretty(&v)?)
+    arquivo_privado::gravar(settings, &serde_json::to_vec_pretty(&v)?)
 }
 
 #[cfg(test)]
@@ -216,13 +225,73 @@ mod testes {
         assert!(!instalada(Ia::Claude, casa));
     }
 
+    fn modo(p: &Path) -> u32 {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(p).unwrap().permissions().mode() & 0o777
+    }
+
     #[test]
     fn chave_nunca_aparece_no_comando_por_tras() {
-        let c = comando_ligar_claude("https://tenancy.novasce.com/mcp", "segredo123");
-        assert!(c.contains(&"Authorization: Bearer segredo123".to_string()));
-        let m = mascarar(&c);
+        let e = entrada_mcp_claude("https://tenancy.novasce.com/mcp", "segredo123");
+        assert_eq!(e["headers"]["Authorization"], "Bearer segredo123");
+        let m = mascarar(&e);
         assert!(!m.contains("segredo123"));
-        assert!(m.contains("Bearer ••••"));
+        assert!(m.contains("Bearer ••••") && m.contains("https://tenancy.novasce.com/mcp"));
+    }
+
+    #[test]
+    fn claude_ganha_o_mcp_sem_perder_o_resto_e_o_arquivo_sai_0600() {
+        let d = tempfile::tempdir().unwrap();
+        let a = d.path().join(".claude.json");
+        std::fs::write(
+            &a,
+            r#"{"numStartups":7,"projects":{"/x":{"allowedTools":[]}},"mcpServers":{"outro":{"command":"y"}}}"#,
+        )
+        .unwrap();
+        std::fs::set_permissions(&a, std::os::unix::fs::PermissionsExt::from_mode(0o644)).unwrap();
+        ligar_claude(d.path(), "https://t/mcp", "chave-de-teste").unwrap();
+        let v: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&a).unwrap()).unwrap();
+        assert_eq!(v["numStartups"], 7);
+        assert_eq!(v["projects"]["/x"]["allowedTools"], serde_json::json!([]));
+        assert_eq!(v["mcpServers"]["outro"]["command"], "y");
+        assert_eq!(
+            v["mcpServers"]["tenancy"],
+            entrada_mcp_claude("https://t/mcp", "chave-de-teste")
+        );
+        assert_eq!(modo(&a), 0o600);
+    }
+
+    #[test]
+    fn o_comando_por_tras_mostra_o_que_foi_gravado() {
+        let d = tempfile::tempdir().unwrap();
+        ligar_claude(d.path(), "https://t/mcp", "chave-de-teste").unwrap();
+        let gravado: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(d.path().join(".claude.json")).unwrap())
+                .unwrap();
+        let mostrado = mascarar(&gravado["mcpServers"]["tenancy"]);
+        assert!(!mostrado.contains("chave-de-teste"));
+        let mut esperado = gravado["mcpServers"]["tenancy"].clone();
+        esperado["headers"]["Authorization"] = serde_json::json!("Bearer ••••");
+        assert_eq!(
+            mostrado,
+            format!("~/.claude.json: mcpServers.tenancy = {esperado}")
+        );
+        assert_eq!(modo(&d.path().join(".claude.json")), 0o600);
+    }
+
+    #[test]
+    fn claude_sem_arquivo_nasce_e_arquivo_ilegivel_nao_e_reescrito() {
+        let d = tempfile::tempdir().unwrap();
+        ligar_claude(d.path(), "https://t/mcp", "k").unwrap();
+        assert!(d.path().join(".claude.json").exists());
+        let ruim = tempfile::tempdir().unwrap();
+        let a = ruim.path().join(".claude.json");
+        std::fs::write(&a, "{ meio escrito").unwrap();
+        assert!(ligar_claude(ruim.path(), "https://t/mcp", "k").is_err());
+        assert_eq!(std::fs::read_to_string(&a).unwrap(), "{ meio escrito");
+        std::fs::write(&a, "[1,2]").unwrap();
+        assert!(ligar_claude(ruim.path(), "https://t/mcp", "k").is_err());
     }
 
     #[test]
@@ -245,5 +314,6 @@ mod testes {
             v["mcpServers"]["tenancy"]["headers"]["Authorization"],
             "Bearer k"
         );
+        assert_eq!(modo(&s), 0o600);
     }
 }

@@ -305,7 +305,7 @@ pub fn espacos_agora_nao(s: State<Estado>) {
 
 #[tauri::command(async)]
 pub fn google_conectar(s: State<Estado>) -> Result<(), ErroVisao> {
-    google::conectar(&s.casa.google).map_err(|m| ErroVisao::novo("recusado", m))?;
+    google::conectar(&s.casa.google, &s.caminhos.config).map_err(|m| ErroVisao::novo("recusado", m))?;
     mudar(&s, |e| e.extras.nuvem = true);
     let _ = rodar_solto(&["systemctl", "--user", "restart", "novasce-sincronizar.service"]);
     Ok(())
