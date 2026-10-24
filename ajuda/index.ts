@@ -12,3 +12,4 @@ import type { AjudaDeTela, Ficha, Guia } from "./tipos";
 export const fichaPorId = (id: string): Ficha | undefined => FICHAS.find((f) => f.id === id);
 export const guiaPorId = (id: string): Guia | undefined => GUIAS.find((g) => g.id === id);
 export const telaPorId = (id: string): AjudaDeTela => TELAS.find((t) => t.tela === id) ?? TELAS.find((t) => t.tela === "geral")!;
+export { buscar, montarIndice, normalizar, type ItemIndice } from "./busca";
