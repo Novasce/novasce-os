@@ -1,0 +1,124 @@
+name: build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "notas/**"
+  schedule:
+    - cron: "0 6 * * 6" # sábado 06:00 UTC: pega o Aurora novo da semana
+  workflow_dispatch:
+
+env:
+  IMAGEM: ghcr.io/novasce/novasce-os
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  versao:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      versao: ${{ steps.conta.outputs.versao }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - id: conta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
+          TAGS=$(skopeo list-tags "docker://${IMAGEM}" 2>/dev/null | jq -r '.Tags[]' || true)
+          VERSAO=$(printf '%s\n' "$TAGS" | bash .github/scripts/proxima-versao.sh "$(date -u +%Y.%m.%d)")
+          echo "versao=${VERSAO}" >> "$GITHUB_OUTPUT"
+          echo "Versão desta montagem: ${VERSAO}"
+
+  imagem:
+    needs: versao
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variante: nvidia
+            base: ghcr.io/ublue-os/aurora-nvidia-open:stable
+          - variante: padrao
+            base: ghcr.io/ublue-os/aurora:stable
+    env:
+      VERSAO: ${{ needs.versao.outputs.versao }}
+      PUBLICA: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Liberar espaço
+        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
+
+      - name: Montar
+        run: |
+          podman build --pull=newer \
+            --build-arg BASE_IMAGE=${{ matrix.base }} \
+            --build-arg VARIANTE=${{ matrix.variante }} \
+            --build-arg IMAGE_VERSION="${VERSAO}" \
+            --label org.opencontainers.image.version="${VERSAO}" \
+            --label org.opencontainers.image.title="Novasce OS" \
+            --label org.opencontainers.image.description="O sistema Linux da Novasce, sobre o Aurora" \
+            --label org.opencontainers.image.source="https://github.com/${{ github.repository }}" \
+            --label org.opencontainers.image.revision="${{ github.sha }}" \
+            --tag "novasce-os:${{ matrix.variante }}" .
+
+      - name: Conferir a imagem
+        run: |
+          podman run --rm --entrypoint /usr/bin/bash -v "$PWD:/repo:ro" \
+            "novasce-os:${{ matrix.variante }}" /repo/tests/imagem.sh ${{ matrix.variante }}
+
+      - name: Entrar no GHCR
+        if: env.PUBLICA == 'true'
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publicar
+        if: env.PUBLICA == 'true'
+        id: publicar
+        run: |
+          set -euo pipefail
+          for tag in "stable-${{ matrix.variante }}" "${VERSAO}-${{ matrix.variante }}"; do
+            podman push --digestfile=/tmp/digest "novasce-os:${{ matrix.variante }}" "${IMAGEM}:${tag}"
+          done
+          echo "digest=$(< /tmp/digest)" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar o cosign
+        if: env.PUBLICA == 'true'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: "v3.1.2"
+
+      - name: Assinar
+        if: env.PUBLICA == 'true'
+        env:
+          COSIGN_EXPERIMENTAL: false
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          DIGEST: ${{ steps.publicar.outputs.digest }}
+        run: |
+          # Formato antigo de propósito: é o que o rpm-ostree e o containers/image conferem hoje.
+          cosign sign -y --new-bundle-format=false --use-signing-config=false \
+            --key env://COSIGN_PRIVATE_KEY "${IMAGEM}@${DIGEST}"
+
+      - name: Conferir a assinatura
+        if: env.PUBLICA == 'true'
+        env:
+          DIGEST: ${{ steps.publicar.outputs.digest }}
+        run: cosign verify --key cosign.pub "${IMAGEM}@${DIGEST}" > /dev/null && echo "Assinatura conferida."
