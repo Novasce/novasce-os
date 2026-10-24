@@ -1,0 +1,14 @@
+[Unit]
+Description=Novasce OS: salvar o brain no GitHub e os Documentos no Google Drive
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/novasce-sincronizar
+Restart=on-failure
+RestartSec=30
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=graphical-session.target
