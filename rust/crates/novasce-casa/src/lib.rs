@@ -5,3 +5,4 @@ pub mod config_casa;
 pub mod json_atomico;
 pub mod nucleo;
 pub mod sistema;
+pub mod versoes;
