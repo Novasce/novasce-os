@@ -1,0 +1,50 @@
+/* Preparar esta máquina: medidas da prancha 1 do canvas (1280 × 720). */
+* { box-sizing: border-box; }
+html, body, #raiz { height: 100%; margin: 0; }
+body { background: var(--nv-superficie); color: var(--nv-tinta); font-family: var(--nv-fonte); -webkit-font-smoothing: antialiased; }
+
+.preparar { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+.lateral { background: #00666C; color: var(--nv-branco); padding: 40px 32px; display: flex; flex-direction: column; gap: 22px; }
+.lateral__titulo { margin: 0; font: 700 24px/1.2 var(--nv-fonte); }
+.lateral__passos { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 15px; }
+.lateral__passo--feito, .lateral__passo--falta { opacity: .6; }
+.lateral__passo--agora { font-weight: 600; color: var(--nv-ciano); }
+
+.conteudo { padding: 48px 56px; overflow-y: auto; scrollbar-gutter: stable; }
+.passo { display: flex; flex-direction: column; gap: 20px; min-height: 100%; }
+.passo h1 { margin: 0; font: 700 28px/1.2 var(--nv-fonte); }
+.texto { margin: 0; font-size: 16px; line-height: 1.5; color: var(--nv-tinta-2); max-width: 760px; }
+.texto--apagado { font-size: 14px; color: var(--nv-apagado); }
+
+.cartoes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cartao-papel, .cartao-escolha {
+  text-align: left; font: inherit; color: inherit;
+  background: var(--nv-papel); border: 1px solid var(--nv-linha-2); border-radius: var(--nv-raio-cartao);
+  padding: 22px; display: flex; flex-direction: column; gap: 10px; cursor: pointer;
+  transition: background-color var(--nv-troca) var(--nv-curva), border-color var(--nv-troca) var(--nv-curva), box-shadow var(--nv-troca) var(--nv-curva);
+}
+.cartao-papel b { font-size: 20px; }
+.cartao-papel span { font-size: 15px; line-height: 1.45; color: var(--nv-tinta-2); }
+.cartao-escolha { padding: 14px 16px; gap: 4px; }
+.cartao-escolha span { font-size: 13px; color: var(--nv-apagado); }
+.cartao-papel:hover, .cartao-escolha:hover { border-color: var(--nv-teal); }
+/* Selecionado: a borda de 1,5 px do canvas vem da sombra interna, sem mudar a medida. */
+.cartao-papel[aria-checked="true"], .cartao-escolha[aria-checked="true"] { border-color: var(--nv-teal); background: #F4FAF9; box-shadow: inset 0 0 0 .5px var(--nv-teal); }
+.cartao-papel:focus-visible, .cartao-escolha:focus-visible { outline: 2px solid var(--nv-teal); outline-offset: 3px; }
+
+.time, .redes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; max-height: 280px; overflow-y: auto; scrollbar-gutter: stable; }
+.campos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 760px; }
+
+.linha-estado { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--nv-tinta-2); background: var(--nv-papel); border: 1px solid var(--nv-linha); border-radius: var(--nv-raio-cartao); padding: 14px 16px; }
+.linha-estado--solta { background: none; border-color: transparent; padding: 0; color: var(--nv-apagado); }
+.ponto { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--nv-linha-2); }
+.linha-estado--ok .ponto { background: var(--nv-ok); }
+.linha-estado--alerta .ponto { background: var(--nv-alerta); }
+.linha-estado--erro .ponto { background: var(--nv-erro); }
+
+.codigo { margin: 0; min-height: 62px; font: 600 56px/1.1 var(--nv-mono); letter-spacing: .08em; color: var(--nv-teal-escuro); }
+.nota { margin: 0; font-size: 14px; line-height: 1.5; color: var(--nv-apagado); border-top: 1px solid var(--nv-linha); padding-top: 14px; }
+.aviso-erro { margin: 0; min-height: 20px; font-size: 14px; color: var(--nv-erro); }
+.acoes { margin-top: auto; display: flex; gap: 8px; min-height: 42px; }
+.acoes--meio { margin-top: 0; }
+.acoes .nv-botao { min-width: 160px; }
