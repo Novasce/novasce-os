@@ -30,3 +30,14 @@ body { background: #fff; color: var(--ink); font: 400 14px/1.45 Inter, sans-seri
 .problemas { border-collapse: collapse; width: 100%; font-size: 13px; }
 .problemas th, .problemas td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
 .problemas th { background: #F7F8F7; }
+.pedir { box-sizing: border-box; height: 100vh; padding: 24px 30px; display: flex; flex-direction: column; gap: 14px; }
+.pedir h1, .titulo-pedir { margin: 0; font: 600 22px Inter, sans-serif; }
+.caixa-texto { position: relative; }
+.caixa-texto textarea { box-sizing: border-box; width: 100%; min-height: 110px; resize: none; border: 1px solid var(--teal); border-radius: 8px; padding: 14px 14px 50px; font: 400 15px/1.5 Inter, sans-serif; }
+.caixa-texto .falar { position: absolute; right: 12px; bottom: 12px; }
+.vai-junto { display: flex; gap: 14px; align-items: flex-start; }
+.miniatura { width: 180px; height: 101px; flex: none; border-radius: 6px; border: 1px solid var(--line2); background: #0A2528; overflow: hidden; }
+.miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.marcas { display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--ink2); }
+.marcas label { display: flex; gap: 8px; align-items: center; }
+.acoes-pedir { margin-top: auto; display: flex; gap: 8px; }
