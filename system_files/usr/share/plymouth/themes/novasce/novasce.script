@@ -1,0 +1,94 @@
+// Novasce OS · tela de boot (Plymouth, plugin script). Canvas v0.5, prancha 2.
+// Fundo teal #00666C, cata-vento branco parado e uma linha que mostra o progresso.
+// Nada gira e não há pontinhos. A senha do disco aparece com a mesma cara.
+
+Window.SetBackgroundTopColor(0.0, 0.4, 0.4235);
+Window.SetBackgroundBottomColor(0.0, 0.4, 0.4235);
+
+L = Window.GetWidth();
+A = Window.GetHeight();
+X0 = Window.GetX();
+Y0 = Window.GetY();
+
+// Cata-vento: 12,8% da altura, com o centro a 45% da altura.
+logo_base = Image("catavento.png");
+lado = Math.Int(A * 0.128);
+logo_img = logo_base.Scale(Math.Int(lado * logo_base.GetWidth() / logo_base.GetHeight()), lado);
+logo = Sprite(logo_img);
+logo.SetX(X0 + Math.Int((L - logo_img.GetWidth()) / 2));
+logo.SetY(Y0 + Math.Int(A * 0.45 - logo_img.GetHeight() / 2));
+logo.SetZ(10);
+
+// Linha de progresso: 12,5% da largura, 3 px, a 58,3% da altura.
+larg = Math.Int(L * 0.125);
+trilho = Sprite(Image("trilho.png").Scale(larg, 3));
+trilho.SetX(X0 + Math.Int((L - larg) / 2));
+trilho.SetY(Y0 + Math.Int(A * 0.583));
+trilho.SetZ(10);
+
+linha_base = Image("linha.png");
+linha = Sprite();
+linha.SetX(trilho.GetX());
+linha.SetY(trilho.GetY());
+linha.SetZ(11);
+
+fun progresso_cb(duracao, progresso) {
+  w = Math.Int(larg * progresso);
+  if (w < 1) w = 1;
+  linha.SetImage(linha_base.Scale(w, 3));
+}
+Plymouth.SetBootProgressFunction(progresso_cb);
+
+// "Novasce OS" a 6,1% do pé, com 3% da altura.
+nome_base = Image("nome.png");
+nh = Math.Int(A * 0.03);
+nome_img = nome_base.Scale(Math.Int(nh * nome_base.GetWidth() / nome_base.GetHeight()), nh);
+nome = Sprite(nome_img);
+nome.SetX(X0 + Math.Int((L - nome_img.GetWidth()) / 2));
+nome.SetY(Y0 + A - Math.Int(A * 0.061) - nh);
+nome.SetZ(10);
+
+// Senha do disco: o texto no lugar da linha e um ponto por letra digitada.
+pedido_base = Image("pedido.png");
+ph = Math.Int(A * 0.028);
+pedido_img = pedido_base.Scale(Math.Int(ph * pedido_base.GetWidth() / pedido_base.GetHeight()), ph);
+pedido = Sprite(pedido_img);
+pedido.SetX(X0 + Math.Int((L - pedido_img.GetWidth()) / 2));
+pedido.SetY(trilho.GetY() - Math.Int(ph / 2));
+pedido.SetZ(20);
+pedido.SetOpacity(0);
+
+ponto_img = Image("ponto.png").Scale(Math.Int(A * 0.012), Math.Int(A * 0.012));
+total_pontos = 0;
+
+fun senha_cb(prompt, quantos) {
+  trilho.SetOpacity(0);
+  linha.SetOpacity(0);
+  pedido.SetOpacity(1);
+  passo = ponto_img.GetWidth() + Math.Int(A * 0.008);
+  inicio = X0 + Math.Int((L - quantos * passo) / 2);
+  for (i = 0; i < quantos; i++) {
+    if (i >= global.total_pontos) {
+      global.ponto[i] = Sprite(ponto_img);
+      global.ponto[i].SetZ(20);
+      global.total_pontos = i + 1;
+    }
+    global.ponto[i].SetX(inicio + i * passo);
+    global.ponto[i].SetY(pedido.GetY() + pedido_img.GetHeight() + Math.Int(A * 0.02));
+    global.ponto[i].SetOpacity(1);
+  }
+  for (i = quantos; i < global.total_pontos; i++) {
+    global.ponto[i].SetOpacity(0);
+  }
+}
+Plymouth.SetDisplayPasswordFunction(senha_cb);
+
+fun normal_cb() {
+  pedido.SetOpacity(0);
+  for (i = 0; i < global.total_pontos; i++) {
+    global.ponto[i].SetOpacity(0);
+  }
+  trilho.SetOpacity(1);
+  linha.SetOpacity(1);
+}
+Plymouth.SetDisplayNormalFunction(normal_cb);

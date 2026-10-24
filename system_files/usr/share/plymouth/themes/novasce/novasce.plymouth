@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Novasce
+Description=Cata-vento parado sobre o teal da casa, com uma linha de progresso.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/novasce
+ScriptFile=/usr/share/plymouth/themes/novasce/novasce.script
