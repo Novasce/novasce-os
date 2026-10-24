@@ -16,7 +16,10 @@ let esperas = 0;
 
 export const nada = async () => undefined;
 export const estado = async () => atual;
-export const tenancyIniciar = async (): Promise<Codigo> => ({ codigo: "ABCD-EFGH", url: "https://tenancy.exemplo/os/entrar", intervalo: 1 });
+export const tenancyIniciar = async (): Promise<Codigo> => {
+  await new Promise((r) => setTimeout(r, 400));
+  return { codigo: "ABCD-EFGH", url: "https://tenancy.exemplo/os/entrar", intervalo: 5 };
+};
 export const tenancyEsperar = async (): Promise<Espera> => {
   esperas += 1;
   if (esperas < 2) return "pendente";

@@ -19,4 +19,15 @@ describe("Ficha", () => {
     await userEvent.click(screen.getByRole("button", { name: "Mostrar a ficha" }));
     expect(screen.getByText("O que é")).toBeInTheDocument();
   });
+
+  it("ao trocar, a caixa guarda a altura da ficha e não encolhe", async () => {
+    const { container } = render(<Ficha {...f} />);
+    const caixa = container.querySelector<HTMLElement>(".nv-ficha")!;
+    caixa.getBoundingClientRect = () => ({ height: 184.84375 }) as DOMRect;
+    expect(caixa.style.minHeight).toBe("");
+    await userEvent.click(screen.getByRole("button", { name: "Mostrar o comando por trás" }));
+    expect(caixa.style.minHeight).toBe("184.84375px");
+    await userEvent.click(screen.getByRole("button", { name: "Mostrar a ficha" }));
+    expect(caixa.style.minHeight).toBe("184.84375px");
+  });
 });
