@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [{ "Name": "Novasce" }],
+        "Description": "Novasce OS: claro com destaque teal e a área de trabalho B",
+        "Id": "com.novasce.desktop",
+        "License": "GPLv2+",
+        "Name": "Novasce",
+        "Version": "1.0",
+        "Website": "https://novasce.com"
+    },
+    "X-Plasma-MainScript": "defaults",
+    "X-Plasma-RootContainmentLayout": "org.kde.plasma.desktop-layout.js"
+}
