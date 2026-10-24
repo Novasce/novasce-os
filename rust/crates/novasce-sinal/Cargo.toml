@@ -1,0 +1,10 @@
+[package]
+name = "novasce-sinal"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+novasce-core.workspace = true
+clap.workspace = true
+libc.workspace = true
