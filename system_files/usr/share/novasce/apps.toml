@@ -1,0 +1,27 @@
+# Novasce OS · configuração dos apps da casa (M3). Pública: nada aqui é segredo.
+# Reforço por máquina em /etc/novasce/apps.toml, chave por chave.
+[github]
+# Client ID do OAuth App "Novasce OS" (público). Vazio: o passo 3 do Começar explica e oferece pular.
+client_id = ""
+
+[brain]
+# Repositório-modelo da Novasce Base. Vazio ou inacessível: o brain nasce vazio, com README e AGENTS.md.
+modelo = ""
+
+[google]
+# Preenchidos na montagem pelas variáveis NOVASCE_GOOGLE_CLIENT_ID e NOVASCE_GOOGLE_CLIENT_SECRET do Actions.
+# Vazios: o rclone usa o cliente padrão dele.
+client_id = ""
+client_secret = ""
+pasta = "Novasce OS/Documentos"
+
+[voz]
+qualquer_campo = true
+limite_toque_ms = 350
+
+[sede]
+conta = "sede"
+titulo_sala = "Sala da Novasce"
+volta_minutos = 10
+contagem_segundos = 30
+tranca_minutos = 5
