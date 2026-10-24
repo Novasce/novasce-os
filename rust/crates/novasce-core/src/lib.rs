@@ -4,6 +4,7 @@
 pub mod config;
 pub mod contrato;
 pub mod notas;
+pub mod token;
 
 /// Versão do núcleo, a mesma do Cargo.
 pub const VERSAO: &str = env!("CARGO_PKG_VERSION");
