@@ -39,12 +39,16 @@ pub fn nome_do_brain(login: &str) -> String {
 
 const README: &str = "# Meu brain\n\nAs suas notas. Ficam no seu GitHub, privadas, e salvam sozinhas a cada poucos minutos.\n";
 const AGENTS: &str = "# Como trabalhar neste brain\n\nEste é um brain pessoal. Ele é privado e nunca é lido por um espaço da Novasce.\nAntes de cada envio, uma varredura procura senhas e segura o arquivo que tiver uma.\n";
+/// O sincronizar faz `git add -A`: sem isto, cada clique no Obsidian vira commit e conflito entre máquinas.
+/// É o mesmo trecho do modelo Novasce/brain-base.
+const GITIGNORE: &str = "# estado da janela do Obsidian, que muda a cada clique\n.obsidian/workspace.json\n.obsidian/workspace-mobile.json\n.trash/\n";
 
 fn kit_minimo(destino: &Path) -> std::io::Result<()> {
     for (nome, texto) in [
         ("README.md", README),
         ("AGENTS.md", AGENTS),
         ("CLAUDE.md", "@AGENTS.md\n"),
+        (".gitignore", GITIGNORE),
     ] {
         let p = destino.join(nome);
         if !p.exists() {
@@ -237,6 +241,15 @@ mod testes {
         m.assert();
         assert_eq!(o, OrigemBrain::Vazio);
         assert!(destino.join("AGENTS.md").exists() && destino.join("CLAUDE.md").exists());
+    }
+
+    #[test]
+    fn kit_minimo_ignora_o_estado_da_janela_do_obsidian() {
+        let d = tempfile::tempdir().unwrap();
+        kit_minimo(d.path()).unwrap();
+        let ignorados = std::fs::read_to_string(d.path().join(".gitignore")).unwrap();
+        assert!(ignorados.lines().any(|l| l == ".obsidian/workspace.json"));
+        assert!(ignorados.lines().any(|l| l == ".trash/"));
     }
 
     #[test]
