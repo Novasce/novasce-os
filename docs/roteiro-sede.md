@@ -6,6 +6,7 @@
 - Quem faz: o Eduardo, sentado na máquina da sede (RTX 2060).
 - Quanto tempo: umas 2 horas, com a instalação.
 - Marcado com **[só na máquina]**: o que o CI não consegue provar e só se confirma olhando a tela.
+- Sem a imagem publicada: os itens 0.5 e 0.6, os passos 1 a 3 e o 3b, que confere a Sala no navegador.
 
 ## Antes de sair de casa
 
@@ -45,6 +46,28 @@
 4. Num terminal: `mokutil --sb-state` e `nvidia-smi`.
 
 **Esperado:** boot com a marca do Aurora; `SecureBoot enabled`; `nvidia-smi` mostra a GeForce RTX 2060.
+
+## 3b. Sem a imagem: a Sala no navegador
+
+Só enquanto a imagem da Novasce não está publicada. Com a imagem, pular para o passo 4: a Sala abre sozinha no passo 8. Precisa do M2 no ar (desde 25/10) e do celular com o Tenancy.
+
+1. Na conta `eduardo`, abrir o Firefox, que vem no Aurora (se não houver, instalar pela Discover), em `tenancy.novasce.com/sala`. F11 deixa em tela cheia.
+2. No celular, abrir **Máquinas e telas** no Tenancy. Em **Pedidos novos**, conferir que o código é o da TV, clicar **Aprovar** e manter o nome "Tela da sede".
+3. Esperar a TV trocar sozinha. Ela pergunta a cada 3 segundos.
+4. Na TV, clicar **Ver tudo**, ler o QR com o celular, entrar e tocar em **Mostrar na TV**.
+5. Fechar o Firefox e abrir de novo em `tenancy.novasce.com/sala`.
+6. Em **Máquinas e telas**, seção **Telas**, clicar **Revogar** na "Tela da sede" e confirmar.
+
+**Esperado:**
+
+- Passo 1: "Conectar esta tela à Sala", um código de 6 letras e "Esperando aprovação · o código vale 10 minutos". Código vencido troca sozinho por um novo.
+- Passo 2: o aviso "Tela aprovada. A Sala aparece nela em instantes."
+- Passo 3: a Sala no modo discreto, sem dinheiro nem cliente, com os blocos Agentes, Quadro de hoje, Saúde dos sistemas, Números e Mural. Agentes vazio é o esperado: o executor só sobe na sede com a imagem (passo 11). Na Saúde, SOPEC ou Tenancy sem alvo quer dizer que o Endereço de produção do produto está vazio (Produtos, aba Técnico).
+- Passo 4: "Ver tudo · esperando o login no celular" e, depois do toque, "Ver tudo · volta ao discreto em" com a contagem dos 10 minutos e o botão **Voltar ao discreto**.
+- Passo 5: a Sala abre já pareada, sem pedir código. O token fica no navegador.
+- Passo 6: "Tela revogada. Ela volta a mostrar o código para conectar." Na leitura seguinte, a TV mostra "O acesso desta tela foi revogado. Peça a aprovação de novo com o código abaixo."
+
+Se a TV ficar na Sala até a imagem chegar, pular o passo 6 e, nas Configurações do Sistema da conta `eduardo`, desligar o apagar da tela, a suspensão e o bloqueio automático. Quando a imagem chegar, revogar esta tela: a conta Sede pareia a dela no passo 8.
 
 ## 4. Trocar para a imagem da Novasce
 
