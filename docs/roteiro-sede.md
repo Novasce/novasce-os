@@ -26,8 +26,9 @@ Só se a máquina já tem um sistema. Em 10/2026 a sede ainda tem o Fedora antig
 1. Entrar na máquina e abrir um terminal.
 2. `ls /home` e `du -sh /home/* 2>/dev/null`: o que importar sai antes, para o Drive ou para o Mac (`scp`). O pendrive não serve: ele é o instalador.
 3. `ls ~/.ssh`: se a chave desta máquina foi cadastrada no GitHub (Settings, SSH keys), apagar de lá depois da instalação. A chave morre com o disco.
+4. A sede não tem cabo de rede: a internet vem de um adaptador Wi-Fi USB. Anotar o modelo (`lsusb`) e o driver: `nmcli device` dá o nome do Wi-Fi e `modinfo -F filename $(ethtool -i <nome> | awk '/^driver/{print $2}')` mostra de onde ele vem.
 
-**Esperado:** nada a salvar, ou tudo copiado para fora.
+**Esperado:** nada a salvar, ou tudo copiado para fora. O driver do Wi-Fi mora em `.../kernel/drivers/...`, que vem no Aurora. Se morar em `extra` ou `updates`, foi instalado à parte e o Aurora não terá: levar o cabo USB do celular e usar a internet dele pelo USB (ancoragem) no 3b.
 
 ## 1. BIOS
 
@@ -60,6 +61,8 @@ Só se a máquina já tem um sistema. Em 10/2026 a sede ainda tem o Fedora antig
 ## 3b. Sem a imagem: a Sala no navegador
 
 Só enquanto a imagem da Novasce não está publicada. Com a imagem, pular para o passo 4: a Sala abre sozinha no passo 8. Precisa do M2 no ar (desde 25/10) e do celular com o Tenancy.
+
+Antes, ligar o Wi-Fi pelo ícone de rede da bandeja. Se o adaptador não aparecer, usar a internet do celular pelo cabo USB (ancoragem).
 
 1. Na conta `eduardo`, abrir o Firefox, que vem no Aurora (se não houver, instalar pela Discover), em `tenancy.novasce.com/sala`. F11 deixa em tela cheia.
 2. No celular, abrir **Máquinas e telas** no Tenancy. Em **Pedidos novos**, conferir que o código é o da TV, clicar **Aprovar** e manter o nome "Tela da sede".
@@ -123,7 +126,7 @@ O Preparar abre sozinho no login do `eduardo` (administrador). Se não abrir, pr
 |---|---|---|
 | 7.1 Papel | Escolher **Sede** e Continuar | A linha diz "Placa de vídeo encontrada: NVIDIA GeForce RTX 2060. Esta máquina usa a versão com NVIDIA." O KDE pede a senha de administrador uma vez |
 | 7.2 Rede | Com cabo, Continuar | "Esta máquina já está na internet, pelo cabo." |
-| 7.2b Rede por Wi-Fi (teste opcional, sem cabo) | Tirar o cabo, escolher a rede, digitar a senha e clicar **Conectar** | "Esta máquina já está na internet, pela rede" e o nome dela. Com a senha errada: "Não conectou na rede" e o nome, e a rede não fica em `nmcli connection show` |
+| 7.2b Rede por Wi-Fi (sem cabo; na sede é o caminho, porque lá não há cabo) | Tirar o cabo, escolher a rede, digitar a senha e clicar **Conectar** | "Esta máquina já está na internet, pela rede" e o nome dela. Com a senha errada: "Não conectou na rede" e o nome, e a rede não fica em `nmcli connection show` |
 | 7.3 Registro, sem o M2 no ar | Esperar a resposta | "O Tenancy ainda não recebe máquinas." Clicar **Registrar depois** |
 | 7.3 Registro, com o M2 no ar | Aprovar o código de 6 letras em **Máquinas e telas** no Tenancy | A tela avança sozinha para o passo 4. `sudo ls -l /var/lib/novasce/maquina.json` mostra `-rw-------` e dono `root` |
 | 7.3b Código recusado (teste opcional) | Gerar um código e recusar no Tenancy | "O Tenancy recusou este código. Gere outro e peça a aprovação de novo." e o botão **Gerar outro código** (a API respondeu `403`) |
