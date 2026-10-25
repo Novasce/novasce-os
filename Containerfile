@@ -16,6 +16,9 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 install -y --setopt=install_weak_deps=False \
       rust cargo gcc gcc-c++ make pkgconf-pkg-config nodejs npm \
       webkit2gtk4.1-devel openssl-devel librsvg2-devel libappindicator-gtk3-devel
+# /root aponta para /var/roothome, que não existe na montagem: sem ela, o cargo e o npm não
+# criam ~/.cargo e ~/.npm. Só neste estágio; a imagem final leva apenas o /out.
+RUN mkdir -p /var/roothome
 WORKDIR /src
 COPY package.json package-lock.json ./
 COPY ui ui
