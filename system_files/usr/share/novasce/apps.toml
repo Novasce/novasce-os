@@ -5,8 +5,8 @@
 client_id = ""
 
 [brain]
-# Repositório-modelo da Novasce Base. Vazio ou inacessível: o brain nasce vazio, com README e AGENTS.md.
-modelo = ""
+# Repositório-modelo da Novasce Base (privado, membro da org lê). Vazio ou inacessível: o brain nasce vazio, com README e AGENTS.md.
+modelo = "Novasce/brain-base"
 
 [google]
 # Preenchidos na montagem pelas variáveis NOVASCE_GOOGLE_CLIENT_ID e NOVASCE_GOOGLE_CLIENT_SECRET do Actions.
