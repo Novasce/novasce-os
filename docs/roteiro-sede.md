@@ -6,7 +6,7 @@
 - Quem faz: o Eduardo, sentado na máquina da sede (RTX 2060).
 - Quanto tempo: umas 2 horas, com a instalação.
 - Marcado com **[só na máquina]**: o que o CI não consegue provar e só se confirma olhando a tela.
-- Sem a imagem publicada: os itens 0.5 e 0.6, os passos 1 a 3 e o 3b, que confere a Sala no navegador.
+- Sem a imagem publicada: os itens 0.5 e 0.6, o passo 0 (se a máquina já tem sistema), os passos 1 a 3 e o 3b, que confere a Sala no navegador.
 
 ## Antes de sair de casa
 
@@ -16,8 +16,18 @@
 | 0.2 | As duas imagens publicadas e assinadas | `cosign verify --key cosign.pub ghcr.io/novasce/novasce-os:stable-nvidia` | `Verification for ghcr.io/novasce/novasce-os:stable-nvidia` sem erro |
 | 0.3 | O pacote do GHCR está público | github.com/orgs/Novasce/packages/container/novasce-os/settings, "Change visibility" | `Public`. Sem isso, a máquina não baixa a imagem |
 | 0.4 | A versão publicada | `skopeo inspect docker://ghcr.io/novasce/novasce-os:stable-nvidia \| jq -r '.Labels["org.opencontainers.image.version"]'` | `AAAA.MM.DD.N` |
-| 0.5 | Pendrive de 8 GB com o ISO do Aurora **NVIDIA** (M0, item 6) | getaurora.dev, gravado no Fedora Media Writer | o pendrive aparece como "Aurora" |
-| 0.6 | Senha forte para o disco | no gerenciador de senhas, nunca no brain | anotada |
+| 0.5 | Pendrive de **16 GB ou mais** com o ISO `aurora-nvidia-open-stable-x86_64.iso` (M0, item 6). O ISO tem 7,9 GB e não cabe num de 8 GB | getaurora.dev: Aurora, placa NVIDIA, sem DX. É o mesmo `aurora-nvidia-open` de que a imagem da casa parte. Conferir com `shasum -a 256` contra o arquivo `-CHECKSUM` ao lado do ISO e gravar no Fedora Media Writer (ou `dd` no `/dev/rdiskN` do pendrive, no Mac) | o checksum bate e o pendrive aparece como "Aurora" |
+| 0.6 | Senha forte para o disco e senha de administrador do BIOS (passo 1) | no gerenciador de senhas, nunca no brain | as duas anotadas |
+
+## 0. Antes de apagar o sistema que já está lá
+
+Só se a máquina já tem um sistema. Em 10/2026 a sede ainda tem o Fedora antigo, e o passo 2 apaga o disco inteiro.
+
+1. Entrar na máquina e abrir um terminal.
+2. `ls /home` e `du -sh /home/* 2>/dev/null`: o que importar sai antes, para o Drive ou para o Mac (`scp`). O pendrive não serve: ele é o instalador.
+3. `ls ~/.ssh`: se a chave desta máquina foi cadastrada no GitHub (Settings, SSH keys), apagar de lá depois da instalação. A chave morre com o disco.
+
+**Esperado:** nada a salvar, ou tudo copiado para fora.
 
 ## 1. BIOS
 
