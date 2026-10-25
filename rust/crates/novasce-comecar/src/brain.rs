@@ -48,6 +48,8 @@ fn kit_minimo(destino: &Path) -> std::io::Result<()> {
         ("README.md", README),
         ("AGENTS.md", AGENTS),
         ("CLAUDE.md", "@AGENTS.md\n"),
+        // o Gemini CLI só lê o GEMINI.md, e o ligar_gemini não muda isso
+        ("GEMINI.md", "@./AGENTS.md\n"),
         (".gitignore", GITIGNORE),
     ] {
         let p = destino.join(nome);
@@ -250,6 +252,14 @@ mod testes {
         let ignorados = std::fs::read_to_string(d.path().join(".gitignore")).unwrap();
         assert!(ignorados.lines().any(|l| l == ".obsidian/workspace.json"));
         assert!(ignorados.lines().any(|l| l == ".trash/"));
+    }
+
+    #[test]
+    fn kit_minimo_leva_o_gemini_ao_agents() {
+        let d = tempfile::tempdir().unwrap();
+        kit_minimo(d.path()).unwrap();
+        let gemini = std::fs::read_to_string(d.path().join("GEMINI.md")).unwrap();
+        assert_eq!(gemini.trim(), "@./AGENTS.md");
     }
 
     #[test]
