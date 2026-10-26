@@ -5,7 +5,7 @@ set -euo pipefail
 
 if [ "${1:-}" != "--sempre" ]; then
   [ -e /etc/novasce/preparado ] && exit 0
-  id -nG | tr ' ' '\n' | grep -qx wheel || exit 0
+  id -nG | tr ' ' '\n' | grep -x wheel >/dev/null || exit 0
 fi
 # WebKitGTK com placa NVIDIA: sem isto a janela pode abrir em branco.
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
