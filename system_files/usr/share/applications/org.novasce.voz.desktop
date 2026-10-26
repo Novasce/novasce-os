@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Voz da Novasce
+Comment=Falar em vez de digitar
+Exec=/usr/bin/novasce-voz --abrir
+Icon=novasce-falar
+NoDisplay=true

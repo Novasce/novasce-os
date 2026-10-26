@@ -20,3 +20,6 @@
 .nv-botao--primario { background: var(--nv-teal); border-color: var(--nv-teal); color: var(--nv-sobre-teal); }
 .nv-botao--primario:hover { background: var(--nv-teal-escuro); border-color: var(--nv-teal-escuro); }
 .nv-botao:disabled { background: var(--nv-superficie); border-color: var(--nv-linha); color: var(--nv-apagado); cursor: not-allowed; }
+.nv-botao--pequeno { padding: 8px 12px; font-size: 13px; }
+.nv-botao--desligado, .nv-botao--desligado:hover { background: var(--nv-superficie); border-color: var(--nv-linha); color: var(--nv-apagado); cursor: not-allowed; }
+.nv-botao:not(.nv-botao--desligado):active { box-shadow: inset 0 0 0 1px var(--nv-teal-escuro); }

@@ -1,0 +1,18 @@
+[package]
+name = "novasce-sincronizar"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+novasce-casa = { path = "../novasce-casa" }
+serde.workspace = true
+serde_json.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+ksni = "0.2"
+notify = "6"
+
+[dev-dependencies]
+tempfile.workspace = true

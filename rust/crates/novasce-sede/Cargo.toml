@@ -1,0 +1,22 @@
+[package]
+name = "novasce-sede"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+novasce-casa = { path = "../novasce-casa" }
+serde_json.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "4"
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
+
+[[bin]]
+name = "novasce-tranca"
+path = "src/bin/tranca.rs"
+
+[[bin]]
+name = "novasce-navegador-sede"
+path = "src/bin/navegador_sede.rs"

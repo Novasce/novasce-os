@@ -1,0 +1,6 @@
+html, body, #raiz { margin: 0; height: 100%; background: transparent; }
+.pilula { box-sizing: border-box; height: 48px; width: 420px; background: var(--nv-escuro); color: #F5F5F7; border-radius: 8px; padding: 0 22px; display: flex; align-items: center; gap: 12px; font: 500 14px Inter, sans-serif; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); }
+.pilula .texto { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pilula .ponto { width: 10px; height: 10px; border-radius: 50%; flex: none; transition: background-color var(--dur-estado) var(--curva); }
+.barras { display: flex; gap: 3px; align-items: center; height: 24px; width: 27px; }
+.barras i { width: 3px; border-radius: 2px; background: var(--nv-ciano); transition: height calc(80ms * var(--fator)) linear; }

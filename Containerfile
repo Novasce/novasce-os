@@ -7,6 +7,7 @@ ARG BASE_IMAGE=ghcr.io/ublue-os/aurora-nvidia-open:stable
 FROM scratch AS ctx
 COPY build_files /build_files
 COPY marca /marca
+COPY notas /notas
 COPY cosign.pub /cosign.pub
 
 FROM ${BASE_IMAGE} AS apps
@@ -23,15 +24,23 @@ COPY package.json package-lock.json ./
 COPY ui ui
 COPY apps apps
 COPY rust rust
+COPY ajuda ajuda
+COPY marca marca
+COPY build_files/apps-m3.sh build_files/apps-m3.sh
 RUN cargo build --release --locked --manifest-path rust/Cargo.toml -p novasce-sinal -p novasce-helper
 RUN npm ci && cd apps/preparar && npx tauri build --no-bundle -- --locked
 RUN install -Dm0755 rust/target/release/novasce-sinal /out/usr/bin/novasce-sinal \
  && install -Dm0755 rust/target/release/novasce-helper /out/usr/libexec/novasce/novasce-helper \
  && install -Dm0755 apps/preparar/src-tauri/target/release/novasce-preparar /out/usr/bin/novasce-preparar
+# M3: whisper.cpp, índice da ajuda, serviços em Rust e os quatro apps Tauri da casa.
+RUN bash build_files/apps-m3.sh
 
 FROM ${BASE_IMAGE}
 ARG VARIANTE=nvidia
 ARG IMAGE_VERSION=0000.00.00.0
+# Cliente OAuth "Desktop" do Google para o Drive (M3): vem das variáveis do Actions, nunca do git.
+ARG NOVASCE_GOOGLE_CLIENT_ID=""
+ARG NOVASCE_GOOGLE_CLIENT_SECRET=""
 # Os caminhos do Aurora que a Novasce substitui. Se mudarem, a montagem para aqui.
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     bash /ctx/build_files/conferir-aurora.sh

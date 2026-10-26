@@ -1,0 +1,12 @@
+[Unit]
+Description=Novasce OS: entrar no Tenancy e chamados em nome da máquina
+Requires=novasce-sinal-local.socket
+After=network-online.target
+
+[Service]
+ExecStart=/usr/libexec/novasce/novasce-sinal-local
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ReadOnlyPaths=/var/lib/novasce

@@ -1,0 +1,38 @@
+export type Tela = "boas-vindas" | "passo1" | "passo2" | "passo3" | "espacos" | "de-volta" | "fim";
+export type Pessoa = { firstName: string; name: string; email: string };
+export type BoasVindas = {
+  firstName: string;
+  area: { nome: string; dono: string; url: string } | null;
+  primeiraTarefa: { titulo: string; prazo: string | null; url: string } | null;
+};
+export type EspacoVisao = { slug: string; nome: string; descricao: string; estado: "trazer" | "trazido" | "fora" };
+export type Descobertas = { falou: boolean; pediuAjuda: boolean; achouNota: boolean; trocouAtalho: boolean };
+export type Extras = { nuvem: boolean; senhas: boolean; voz: boolean };
+export type ItemSync = { estado: "salvo" | "subindo" | "problema" | "desligado"; quando: string | null; progresso: number | null; mensagem: string | null };
+export type EstadoSync = { brain: ItemSync; documentos: ItemSync };
+export type EstadoTela = {
+  tela: Tela;
+  passosFeitos: number;
+  pessoa: Pessoa | null;
+  boasVindas: BoasVindas | null;
+  antesDoPasso1: boolean;
+  espacos: EspacoVisao[];
+  kitDisponivel: boolean;
+  extras: Extras;
+  manha: boolean;
+  descobertas: Descobertas;
+  ias: string[];
+  githubConfigurado: boolean;
+  githubLogin: string | null;
+  brainRepo: string | null;
+  movimento: number;
+  sincronizar: EstadoSync | null;
+  googleConectado: boolean;
+  vozQualquerCampo: boolean;
+};
+export type ErroVisao = { tipo: "sem-internet" | "recusado" | "sem-servico" | "sem-permissao" | "sem-configuracao"; mensagem: string };
+export type Codigo = { codigo: string; url: string; intervalo: number };
+export type Espera = "pendente" | "devagar" | "pronto";
+export type OrigemBrain = "modelo" | "vazio" | "ja-existia";
+export const NOME_IA: Record<string, string> = { claude: "Claude", chatgpt: "ChatGPT", gemini: "Gemini" };
+export const NOME_CLI: Record<string, string> = { claude: "Claude Code", chatgpt: "Codex", gemini: "Gemini CLI" };

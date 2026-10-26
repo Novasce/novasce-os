@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Começar
+Exec=/usr/bin/novasce-comecar --se-pendente
+Icon=novasce-logo
+X-KDE-autostart-phase=2
+NoDisplay=true

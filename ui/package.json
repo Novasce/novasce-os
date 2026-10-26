@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css",
-    "./teste": "./src/test-utils/estados.ts"
+    "./teste": "./src/test-utils/estados.ts",
+    "./movimento.css": "./src/movimento.css",
+    "./canvas.css": "./src/canvas.css"
   },
   "scripts": {
     "test": "vitest run",

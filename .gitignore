@@ -5,3 +5,7 @@
 node_modules/
 cosign.key
 *.key
+ajuda/saida/
+/tests/geometria/node_modules/
+/tests/geometria/test-results/
+/tests/geometria/playwright-report/

@@ -1,0 +1,11 @@
+[Unit]
+Description=Novasce OS: QR "Esqueci a senha" no fundo do login
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/novasce/novasce-login-qr
+
+[Install]
+WantedBy=multi-user.target

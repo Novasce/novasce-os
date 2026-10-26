@@ -31,3 +31,19 @@ describe("Botao", () => {
     expect(propriedadesProibidasEmEstados(css)).toEqual([]);
   });
 });
+
+describe("Botao desligado com motivo (M3)", () => {
+  it("fica desligado, diz por quê e não clica", async () => {
+    const { render, screen } = await import("@testing-library/react");
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const { vi } = await import("vitest");
+    const clique = vi.fn();
+    render(<Botao desligado="Conecte o GitHub primeiro." tamanho="pequeno" onClick={clique}>Criar meu brain</Botao>);
+    const b = screen.getByRole("button", { name: "Criar meu brain" });
+    expect(b).toHaveAttribute("aria-disabled", "true");
+    expect(b).toHaveAttribute("title", "Conecte o GitHub primeiro.");
+    expect(b.className).toContain("nv-botao--pequeno");
+    await userEvent.click(b);
+    expect(clique).not.toHaveBeenCalled();
+  });
+});

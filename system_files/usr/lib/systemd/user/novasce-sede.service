@@ -1,0 +1,12 @@
+[Unit]
+Description=Novasce OS: conta Sede volta à Sala e mostra a atualização pronta
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecCondition=/usr/bin/grep -qx sede /etc/novasce/papel
+ExecStart=/usr/bin/novasce-sede
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target

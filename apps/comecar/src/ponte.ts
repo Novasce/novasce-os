@@ -1,0 +1,33 @@
+import { invoke } from "@tauri-apps/api/core";
+import * as falsa from "./ponte-falsa";
+import type { Codigo, Espera, EstadoTela, OrigemBrain } from "./tipos";
+
+const f = import.meta.env.VITE_PONTE === "falsa";
+const i = <T>(cmd: string, args?: Record<string, unknown>) => invoke<T>(cmd, args);
+
+export const estado = (): Promise<EstadoTela> => (f ? falsa.estado() : i("estado_tela"));
+export const tenancyIniciar = (): Promise<Codigo> => (f ? falsa.tenancyIniciar() : i("tenancy_iniciar"));
+export const tenancyEsperar = (): Promise<Espera> => (f ? falsa.tenancyEsperar() : i("tenancy_esperar"));
+export const boasVindasVista = (): Promise<void> => (f ? falsa.nada() : i("boas_vindas_vista"));
+export const iaInstalar = (iaId: string): Promise<void> => (f ? falsa.nada() : i("ia_instalar", { iaId }));
+export const iaAbrirWeb = (iaId: string): Promise<void> => (f ? falsa.nada() : i("ia_abrir_web", { iaId }));
+export const iaConcluir = (iasMarcadas: string[]): Promise<void> => (f ? falsa.iaConcluir() : i("ia_concluir", { iasMarcadas }));
+export const iaLigarTenancy = (iaId: string, chave: string): Promise<void> => (f ? falsa.nada() : i("ia_ligar_tenancy", { iaId, chave }));
+export const githubIniciar = (): Promise<Codigo> => (f ? falsa.githubIniciar() : i("github_iniciar"));
+export const githubEsperar = (): Promise<Espera> => (f ? falsa.githubEsperar() : i("github_esperar"));
+export const brainCriar = (): Promise<OrigemBrain> => (f ? falsa.brainCriar() : i("brain_criar"));
+export const espacosTrazer = (slugs: string[], kit: boolean): Promise<void> => (f ? falsa.espacosTrazer() : i("espacos_trazer", { slugs, kit }));
+export const espacosAgoraNao = (): Promise<void> => (f ? falsa.espacosTrazer() : i("espacos_agora_nao"));
+export const googleConectar = (): Promise<void> => (f ? falsa.nada() : i("google_conectar"));
+export const abrirBitwarden = (): Promise<void> => (f ? falsa.nada() : i("abrir_bitwarden"));
+export const vozTestar = (): Promise<void> => (f ? falsa.nada() : i("voz_testar"));
+export const manhaDefinir = (ligada: boolean): Promise<void> => (f ? falsa.nada() : i("manha_definir", { ligada }));
+export const fimVisto = (): Promise<void> => (f ? falsa.nada() : i("fim_visto"));
+export const deVoltaConcluir = (): Promise<void> => (f ? falsa.nada() : i("de_volta_concluir"));
+export const abrirUrl = (url: string): Promise<void> => (f ? falsa.nada() : i("abrir_url", { url }));
+export const abrirTenancy = (caminho: string): Promise<void> => (f ? falsa.nada() : i("abrir_tenancy", { caminho }));
+export const abrirAjuda = (): Promise<void> => (f ? falsa.nada() : i("abrir_ajuda"));
+export const abrirFicha = (id: string): Promise<void> => (f ? falsa.nada() : i("abrir_ficha", { id }));
+export const abrirWifi = (): Promise<void> => (f ? falsa.nada() : i("abrir_wifi"));
+export const copiar = (texto: string): Promise<void> => (f ? falsa.nada() : i("copiar", { texto }));
+export const fechar = (): Promise<void> => (f ? falsa.nada() : i("fechar"));

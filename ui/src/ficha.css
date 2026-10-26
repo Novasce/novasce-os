@@ -1,0 +1,6 @@
+.nv-ficha-envolta { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.nv-ficha { align-self: stretch; box-sizing: border-box; min-height: 112px; border: 1px solid var(--nv-linha); border-radius: var(--nv-raio-cartao); padding: 16px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; background: #FBFCFC; font: 400 13px/1.45 var(--nv-fonte); color: var(--nv-tinta-2); }
+.nv-ficha__rotulo { font-family: var(--nv-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--nv-apagado); }
+.nv-ficha__comando { grid-column: 1 / -1; margin: 0; font: 400 13px/1.5 var(--nv-mono); white-space: pre-wrap; overflow: auto; color: var(--nv-tinta); }
+.nv-ficha__link { background: none; border: 0; padding: 0; color: var(--nv-teal); font: 600 13px var(--nv-fonte); cursor: pointer; transition: color var(--nv-troca) var(--nv-curva); }
+.nv-ficha__link:hover { color: var(--nv-teal-escuro); }

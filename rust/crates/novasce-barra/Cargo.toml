@@ -1,0 +1,21 @@
+[package]
+name = "novasce-barra"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+novasce-casa = { path = "../novasce-casa" }
+novasce-chamados = { path = "../novasce-chamados" }
+serde.workspace = true
+serde_json.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+ureq.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+ksni = "0.2"
+notify-rust = "4"
+zbus = "4"
+
+[dev-dependencies]
+tempfile.workspace = true

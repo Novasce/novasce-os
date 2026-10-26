@@ -1,0 +1,8 @@
+[Unit]
+Description=Novasce OS: refaz o QR do login quando a máquina é registrada ou muda de dono
+
+[Path]
+PathChanged=/var/lib/novasce/maquina.json
+
+[Install]
+WantedBy=multi-user.target

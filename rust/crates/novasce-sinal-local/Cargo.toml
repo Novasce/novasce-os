@@ -1,0 +1,18 @@
+[package]
+name = "novasce-sinal-local"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+novasce-casa = { path = "../novasce-casa" }
+serde_json.workspace = true
+base64 = "0.22"
+
+# SO_PEERCRED e a conta de quem pediu só existem no Linux (a sede); no Mac só a lógica compila.
+[target.'cfg(target_os = "linux")'.dependencies]
+nix = { version = "0.29", features = ["socket", "user"] }
+
+[dev-dependencies]
+mockito.workspace = true
+tempfile.workspace = true

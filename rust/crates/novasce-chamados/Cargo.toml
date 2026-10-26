@@ -1,0 +1,19 @@
+[package]
+name = "novasce-chamados"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+novasce-casa = { path = "../novasce-casa" }
+serde.workspace = true
+serde_json.workspace = true
+qrcode = { version = "0.14", default-features = false }
+
+[[bin]]
+name = "novasce-login-qr"
+path = "src/bin/login_qr.rs"
+
+[dev-dependencies]
+mockito.workspace = true
+tempfile.workspace = true

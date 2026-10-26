@@ -1,0 +1,17 @@
+[package]
+name = "novasce-voz"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+toml.workspace = true
+regex = "1"
+
+[[bin]]
+name = "novasce-voz-medir"
+path = "src/bin/medir.rs"
+
+[dev-dependencies]
+tempfile.workspace = true

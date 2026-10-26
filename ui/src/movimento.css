@@ -1,0 +1,18 @@
+/* O fator do KDE escala as três durações do M1. Menos movimento: a cor fica e o movimento sai. */
+:root {
+  --fator: 1;
+  --nv-troca: calc(160ms * var(--fator));
+  --nv-entra: calc(200ms * var(--fator));
+  --nv-passo: calc(240ms * var(--fator));
+  --curva: var(--nv-curva);
+  --dur-estado: var(--nv-troca);
+  --dur-entra: var(--nv-entra);
+  --dur-anel: var(--nv-passo);
+}
+:root[data-movimento="reduzido"] { --fator: 0; }
+@media (prefers-reduced-motion: reduce) { :root { --fator: 0 !important; } }
+
+.entra { animation: novasce-entra var(--nv-entra) var(--nv-curva) both; }
+@keyframes novasce-entra { from { opacity: 0; } to { opacity: 1; } }
+:root[data-movimento="reduzido"] .entra { animation: none; }
+@media (prefers-reduced-motion: reduce) { .entra { animation: none; } }
