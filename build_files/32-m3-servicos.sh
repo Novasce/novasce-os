@@ -9,6 +9,7 @@ install -Dm0644 /ctx/notas/versoes.json /usr/share/novasce/notas/versoes.json
 
 # Cata-vento oficial, branco, sobre o quadrado teal. O vetor não é redesenhado: só é composto.
 interno=$(sed '1d;$d' /ctx/marca/catavento.svg)
+install -d /usr/share/icons/hicolor/scalable/status
 cat >/usr/share/icons/hicolor/scalable/status/novasce-atualizacao.svg <<EOF
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#00666C"/><svg x="5" y="5" width="14" height="14" viewBox="0 0 142.582 143.999" fill="#F5F5F7">$interno</svg></svg>
 EOF
