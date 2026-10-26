@@ -12,5 +12,6 @@ dnf5 install -y --setopt=install_weak_deps=False \
   plymouth-plugin-script plymouth-scripts librsvg2-tools rsms-inter-fonts \
   webkit2gtk4.1 pciutils nodejs npm git
 node -e 'if (+process.versions.node.split(".")[0] < 22) { console.error("Node < 22"); process.exit(1) }'
-fc-list : family | grep -q '^Inter'
+# grep sem -q: com pipefail, o -q sai na primeira linha e o fc-list morre de SIGPIPE (141)
+fc-list : family | grep '^Inter' >/dev/null
 dnf5 clean all

@@ -9,4 +9,4 @@ INITRAMFS="/usr/lib/modules/${KERNEL_VERSION}/initramfs.img"
 
 DRACUT_NO_XATTR=1 dracut --kver "$KERNEL_VERSION" --reproducible --force --tmpdir /tmp "$INITRAMFS"
 chmod 0600 "$INITRAMFS"
-lsinitrd "$INITRAMFS" | grep -q 'usr/share/plymouth/themes/novasce/novasce.script'
+lsinitrd "$INITRAMFS" | grep 'usr/share/plymouth/themes/novasce/novasce.script' >/dev/null
