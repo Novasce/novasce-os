@@ -1,0 +1,51 @@
+/* Tokens da marca Novasce (canvas v0.5, manual de acabamento, spec seção 2).
+   Claro é o padrão. O Grafite é escolha da pessoa. */
+:root {
+  --nv-papel: #FFFFFF;
+  --nv-superficie: #F5F5F7;
+  --nv-tinta: #1D1D1F;
+  --nv-tinta-2: #3B4446;
+  --nv-apagado: #647073;
+  --nv-linha: #E5E9E8;
+  --nv-linha-2: #CBD3D1;
+  --nv-teal: #00666C;
+  --nv-teal-escuro: #004D52;
+  --nv-teal-suave: #E8F2F2;
+  --nv-sobre-teal: #FFFFFF;
+  --nv-ciano: #00C4CC;
+  --nv-escuro: #0A2528;
+  --nv-branco: #F5F5F7;
+  --nv-ok: #2E7D4F;
+  --nv-alerta: #A85408;
+  --nv-erro: #B42318;
+  --nv-curva: cubic-bezier(.2, .7, .2, 1);
+  --nv-troca: 160ms;
+  --nv-entra: 200ms;
+  --nv-passo: 240ms;
+  --nv-raio: 6px;
+  --nv-raio-cartao: 8px;
+  --nv-fonte: Inter, "Noto Sans", system-ui, sans-serif;
+  --nv-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+[data-tema="grafite"] {
+  --nv-papel: #1E1E20;
+  --nv-superficie: #26262A;
+  --nv-tinta: #F5F5F7;
+  --nv-tinta-2: #C9CDD0;
+  --nv-apagado: #9AA3A6;
+  --nv-linha: #333338;
+  --nv-linha-2: #45454B;
+  --nv-teal: #00C4CC;
+  --nv-teal-escuro: #7FE3E8;
+  --nv-teal-suave: #12343A;
+  --nv-sobre-teal: #0A2528;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --nv-troca: 0ms;
+    --nv-entra: 0ms;
+    --nv-passo: 0ms;
+  }
+}

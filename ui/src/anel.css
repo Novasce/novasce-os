@@ -1,0 +1,2 @@
+/* O terço muda de cor em 240 ms. Com menos movimento, --nv-passo vira 0ms (tokens.css). */
+.nv-anel__terco { transition: stroke var(--nv-passo) var(--nv-curva); }

@@ -1,0 +1,4 @@
+# Casa dos agentes (executor, cofre, Claude) e a trava da rodada, só na sede.
+d /var/lib/novasce-agentes 0700 agentes agentes -
+d /run/novasce-agentes 0755 agentes agentes -
+f /run/novasce-agentes/rodada.lock 0644 agentes agentes -

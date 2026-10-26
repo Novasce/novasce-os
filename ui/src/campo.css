@@ -1,0 +1,18 @@
+.nv-campo { display: flex; flex-direction: column; gap: 6px; font-family: var(--nv-fonte); }
+.nv-campo__rotulo { font: 600 13px/1.3 var(--nv-fonte); color: var(--nv-tinta-2); }
+.nv-campo__entrada {
+  height: 42px;
+  border: 1px solid var(--nv-linha-2);
+  border-radius: var(--nv-raio);
+  background: var(--nv-papel);
+  padding: 0 12px;
+  font: 400 14px var(--nv-fonte);
+  color: var(--nv-tinta);
+  transition: border-color var(--nv-troca) var(--nv-curva);
+}
+.nv-campo__entrada:focus-visible { outline: 2px solid var(--nv-teal); outline-offset: 1px; border-color: var(--nv-teal); }
+.nv-campo__entrada:disabled { background: var(--nv-superficie); color: var(--nv-apagado); cursor: not-allowed; }
+.nv-campo__entrada[aria-invalid="true"] { border-color: var(--nv-erro); }
+/* A mensagem tem lugar reservado: aparecer ou sumir não empurra nada. */
+.nv-campo__mensagem { margin: 0; min-height: 18px; font: 400 13px/18px var(--nv-fonte); color: var(--nv-apagado); }
+.nv-campo__mensagem--erro { color: var(--nv-erro); }

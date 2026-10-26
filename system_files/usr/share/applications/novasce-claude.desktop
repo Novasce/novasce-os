@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Claude
+Comment=Conversar com o Claude, com a sua assinatura
+Exec=/usr/libexec/novasce/abrir-web claude
+Icon=novasce-claude
+Categories=Office;
+StartupWMClass=chrome-claude.ai__-Default

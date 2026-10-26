@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala da Novasce</title>
+<style>
+  :root { --escuro: #0A2528; --superficie: #F5F5F7; --tinta: #1D1D1F; --tinta2: #3B4446; --apagado: #647073; --linha: #E5E9E8; --branco: #F5F5F7; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--superficie); color: var(--tinta); font-family: Inter, "Noto Sans", sans-serif; display: flex; flex-direction: column; }
+  header { height: 132px; flex: none; background: var(--escuro); color: var(--branco); display: flex; align-items: center; gap: 22px; padding: 0 56px; font-weight: 600; font-size: 34px; }
+  main { flex: 1; display: grid; place-items: center; padding: 56px; }
+  .cartao { background: #FFFFFF; border: 1px solid var(--linha); border-radius: 8px; padding: 48px 56px; max-width: 960px; display: flex; flex-direction: column; gap: 18px; }
+  h1 { margin: 0; font-size: 48px; line-height: 1.15; }
+  p { margin: 0; font-size: 26px; line-height: 1.5; color: var(--tinta2); }
+  .pe { font-size: 20px; color: var(--apagado); }
+</style>
+</head>
+<body>
+<header>
+  <svg width="54" height="55" viewBox="0 0 142.582 143.999" aria-hidden="true"><g transform="translate(-1400.138 219.439) scale(1 -1)" fill="#F5F5F7"><path d="M1475.296 126.707C1484.370 134.042 1446.451 95.869 1446.451 95.869L1459.001 75.440L1484.865 119.438L1473.158 139.982L1420.156 141.239L1400.138 117.159C1400.138 117.159 1466.222 119.372 1475.296 126.707"/><path d="M1463.375 149.451C1465.240 137.934 1450.917 189.796 1450.917 189.796L1426.952 189.039L1452.315 144.751L1475.961 144.719L1503.354 190.111L1492.383 219.439C1492.383 219.439 1461.510 160.968 1463.375 149.451"/><path d="M1490.259 149.515C1479.340 153.627 1531.456 140.252 1531.456 140.252L1542.720 161.417L1491.683 161.447L1479.893 140.950L1505.642 94.607L1536.542 89.534C1536.542 89.534 1501.178 145.403 1490.259 149.515"/></g></svg>
+  Sala da Novasce
+</header>
+<main>
+  <div class="cartao">
+    <h1>A Sala chega com o Tenancy</h1>
+    <p>Esta tela abre a Sala sozinha assim que o Tenancy estiver pronto. Ninguém precisa fazer nada.</p>
+    <p class="pe">A sede confere o Tenancy a cada minuto.</p>
+  </div>
+</main>
+</body>
+</html>

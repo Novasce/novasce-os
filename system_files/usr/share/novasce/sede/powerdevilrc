@@ -1,0 +1,7 @@
+# A TV da Sala fica acesa e a sede nunca suspende.
+[AC][Display]
+DimDisplayWhenIdle=false
+TurnOffDisplayWhenIdle=false
+
+[AC][SuspendAndShutdown]
+AutoSuspendAction=0

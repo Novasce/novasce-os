@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Tenancy
+GenericName=ERP da Novasce
+Comment=Tarefas, chamados e o time da Novasce
+Exec=/usr/libexec/novasce/abrir-web tenancy
+Icon=novasce-tenancy
+Categories=Office;
+StartupWMClass=chrome-tenancy.novasce.com__-Default

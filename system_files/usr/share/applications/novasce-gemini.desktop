@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Gemini
+Comment=Conversar com o Gemini, com a sua assinatura
+Exec=/usr/libexec/novasce/abrir-web gemini
+Icon=novasce-gemini
+Categories=Office;
+StartupWMClass=chrome-gemini.google.com__-Default

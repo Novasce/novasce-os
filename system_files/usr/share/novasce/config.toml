@@ -1,0 +1,9 @@
+# Novasce OS · configuração padrão da imagem. A imagem é pública: nada de segredo aqui.
+# Para mudar numa máquina, crie /etc/novasce/config.toml só com a chave que muda.
+# Chave desconhecida é erro (pega digitação errada). As chaves dos apps ficam em apps.toml (M3).
+# A API tem prefixo global: o cliente acrescenta /os/... depois do /api/v1.
+tenancy_api = "https://novasce-tenancy-api-production.up.railway.app/api/v1"
+tenancy_web = "https://tenancy.novasce.com"
+# A Sala é a página /sala do Tenancy web. A conta Sede só abre esta URL em quiosque;
+# o pareamento da tela acontece na própria página, que guarda o token dela.
+sala_url = "${TENANCY_WEB}/sala"

@@ -1,0 +1,4 @@
+# A conta Sede não tranca: ela é de todo mundo e não guarda nada pessoal.
+[Daemon]
+Autolock=false
+LockOnResume=false

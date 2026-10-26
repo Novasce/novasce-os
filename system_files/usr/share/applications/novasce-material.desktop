@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Material da casa
+Comment=O Material do time no Tenancy
+Exec=/usr/libexec/novasce/abrir-web material
+Icon=novasce-material
+Categories=Office;

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Novasce/novasce-os/blob/main/notas/versoes.schema.json",
+  "title": "Notas de versão do Novasce OS",
+  "description": "Lidas pelo aviso de atualização (M3). Uma entrada por versão que merece aviso. Texto sem travessão.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["versao", "tipo", "linha", "custo"],
+    "properties": {
+      "versao": { "type": "string", "pattern": "^[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}\\.[0-9]+$" },
+      "tipo": { "enum": ["importante", "opcional"] },
+      "linha": { "type": "string", "minLength": 1, "maxLength": 140, "description": "Uma frase do que muda." },
+      "custo": { "type": "string", "minLength": 1, "maxLength": 140, "description": "Quanto custa reiniciar agora." }
+    }
+  }
+}
