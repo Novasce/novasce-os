@@ -25,3 +25,8 @@ library=org.kde.breeze
 
 [KSplash]
 Theme=com.novasce.desktop
+
+# Papel de parede de toda conta nova. Sem esta seção, o Plasma cai no padrão do tema
+# (o "Next"), não no da Novasce: é o que a sede mostrou em 26/10.
+[Wallpaper]
+Image=Novasce

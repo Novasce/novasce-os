@@ -6,6 +6,9 @@ pub struct Sessao {
     pub id: String,
     pub usuario: String,
     pub assento: String,
+    /// "online", "active" ou "closing" (do logind). Sessão que fechou com processo
+    /// sobrando fica em "closing" e ainda aparece na lista.
+    pub estado: String,
 }
 
 const TELAS_DE_LOGIN: [&str; 4] = ["plasmalogin", "sddm", "gdm", "lightdm"];
@@ -34,6 +37,49 @@ pub fn pode_reiniciar(agentes: &str, l: &[Sessao], conta_sede: &str) -> PodeRein
     }) {
         Some(s) => PodeReiniciar::OutraConta(s.usuario.clone()),
         None => PodeReiniciar::Sim,
+    }
+}
+
+/// A TV está só na tela de login: há uma tela de login no seat0 e nenhuma conta dentro.
+/// Sessão fechando não conta; terminal (Ctrl+Alt+F3) no seat0 conta como conta dentro.
+pub fn so_a_tela_de_login(l: &[Sessao]) -> bool {
+    let mut tela_de_login = false;
+    for s in l
+        .iter()
+        .filter(|s| s.assento == "seat0" && s.estado != "closing")
+    {
+        if TELAS_DE_LOGIN.contains(&s.usuario.as_str()) {
+            tela_de_login = true;
+        } else if !s.usuario.is_empty() {
+            return false;
+        }
+    }
+    tela_de_login
+}
+
+/// Conta as conferências seguidas com a TV só no login. Na `vezes`-ésima seguida,
+/// diz que é hora de reiniciar a tela de login, e a conta recomeça.
+pub struct Guarda {
+    seguidas: u32,
+    vezes: u32,
+}
+
+impl Guarda {
+    pub fn nova(vezes: u32) -> Self {
+        Self { seguidas: 0, vezes }
+    }
+
+    pub fn conferir(&mut self, so_login: bool) -> bool {
+        if !so_login {
+            self.seguidas = 0;
+            return false;
+        }
+        self.seguidas += 1;
+        if self.seguidas >= self.vezes {
+            self.seguidas = 0;
+            return true;
+        }
+        false
     }
 }
 
@@ -70,12 +116,29 @@ pub fn listar() -> Result<Vec<Sessao>, String> {
     let l: Vec<(String, u32, String, String, zbus::zvariant::OwnedObjectPath)> =
         p.call("ListSessions", &()).map_err(|e| e.to_string())?;
     Ok(l.into_iter()
-        .map(|(id, _, usuario, assento, _)| Sessao {
+        .map(|(id, _, usuario, assento, caminho)| Sessao {
+            estado: estado(&con, &caminho).unwrap_or_default(),
             id,
             usuario,
             assento,
         })
         .collect())
+}
+
+#[cfg(target_os = "linux")]
+fn estado(
+    con: &zbus::blocking::Connection,
+    caminho: &zbus::zvariant::OwnedObjectPath,
+) -> Option<String> {
+    zbus::blocking::Proxy::new(
+        con,
+        "org.freedesktop.login1",
+        caminho.as_str(),
+        "org.freedesktop.login1.Session",
+    )
+    .ok()?
+    .get_property::<String>("State")
+    .ok()
 }
 
 #[cfg(target_os = "linux")]
@@ -101,6 +164,7 @@ mod testes {
             id: id.into(),
             usuario: u.into(),
             assento: "seat0".into(),
+            estado: "active".into(),
         }
     }
 
@@ -129,6 +193,46 @@ mod testes {
             pode_reiniciar("inactive", &[s("2", "sede"), s("3", "luan")], "sede"),
             PodeReiniciar::OutraConta("luan".into())
         );
+    }
+
+    #[test]
+    fn so_a_tela_de_login_quando_ninguem_esta_dentro() {
+        let fechando = Sessao {
+            estado: "closing".into(),
+            ..s("2", "sede")
+        };
+        let por_ssh = Sessao {
+            assento: String::new(),
+            ..s("7", "eduardo")
+        };
+        assert!(so_a_tela_de_login(&[s("9", "plasmalogin")]));
+        assert!(so_a_tela_de_login(&[fechando, s("9", "plasmalogin")]));
+        assert!(so_a_tela_de_login(&[por_ssh, s("9", "plasmalogin")]));
+        // A Sede ou uma conta pessoal dentro: a guarda não mexe.
+        assert!(!so_a_tela_de_login(&[
+            s("2", "sede"),
+            s("9", "plasmalogin")
+        ]));
+        assert!(!so_a_tela_de_login(&[
+            s("3", "luan"),
+            s("9", "plasmalogin")
+        ]));
+        // Sem tela de login (o boot ainda não terminou), também não.
+        assert!(!so_a_tela_de_login(&[]));
+    }
+
+    #[test]
+    fn a_guarda_espera_as_conferencias_seguidas() {
+        let mut g = Guarda::nova(4);
+        assert!(!g.conferir(true));
+        assert!(!g.conferir(true));
+        assert!(!g.conferir(false));
+        for _ in 0..3 {
+            assert!(!g.conferir(true));
+        }
+        assert!(g.conferir(true));
+        // Depois de mandar reiniciar, a conta recomeça.
+        assert!(!g.conferir(true));
     }
 
     #[test]

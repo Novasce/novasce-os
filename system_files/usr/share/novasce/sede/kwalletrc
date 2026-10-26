@@ -1,0 +1,4 @@
+# A conta Sede não usa a carteira do KDE: ela pedia para ser criada por cima da Sala (26/10).
+[Wallet]
+Enabled=false
+First Use=false

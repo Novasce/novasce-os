@@ -1,0 +1,3 @@
+# A conta Sede abre sempre vazia: nada do que ficou aberto volta por cima da Sala.
+[General]
+loginMode=emptySession

@@ -1,0 +1,11 @@
+[Unit]
+Description=Novasce OS: na sede, a TV que fica só na tela de login volta à Sede
+After=display-manager.service
+
+[Service]
+ExecCondition=/usr/bin/grep -qx sede /etc/novasce/papel
+ExecStart=/usr/libexec/novasce/novasce-sede-guarda
+Restart=on-failure
+
+[Install]
+WantedBy=graphical.target

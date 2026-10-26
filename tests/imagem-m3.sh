@@ -11,7 +11,7 @@ confere() {
 for b in novasce-comecar novasce-ajuda novasce-voz novasce-sede novasce-sincronizar novasce-barra novasce-tranca novasce-navegador-sede novasce-voz-medir claude codex gemini; do
   confere "bin $b" "test -x /usr/bin/$b"
 done
-for b in novasce-sinal-local novasce-login-qr git-credencial whisper-cli cli-primeiro-uso; do
+for b in novasce-sinal-local novasce-login-qr git-credencial whisper-cli cli-primeiro-uso novasce-sede-guarda; do
   confere "libexec $b" "test -x /usr/libexec/novasce/$b"
 done
 confere "modelos da voz" "test -s /usr/share/novasce/voz/ggml-small-q5_1.bin && test -s /usr/share/novasce/voz/ggml-base-q5_1.bin"
@@ -21,6 +21,8 @@ confere "índice da ajuda" "test \$(jq length /usr/share/novasce/ajuda/indice.js
 confere "notas de versão" "jq -e 'type == \"array\"' /usr/share/novasce/notas/versoes.json"
 confere "socket do sinal local" "systemctl is-enabled novasce-sinal-local.socket | grep -qx enabled"
 confere "QR do login" "systemctl is-enabled novasce-login-qr.path | grep -qx enabled"
+confere "guarda da Sede ligada" "systemctl is-enabled novasce-sede-guarda.service | grep -qx enabled"
+confere "Sede entra sozinha sem Relogin (que quebrava o Trocar usuário)" "grep -qx 'User=sede' /usr/share/novasce/sede/50-novasce-sede-autologin.conf && ! grep -qi '^Relogin' /usr/share/novasce/sede/50-novasce-sede-autologin.conf"
 for u in novasce-barra novasce-sincronizar app-org.novasce.voz novasce-ydotoold novasce-sede novasce-tranca; do
   confere "unidade de usuário $u" "systemctl --global is-enabled $u.service | grep -qx enabled"
 done

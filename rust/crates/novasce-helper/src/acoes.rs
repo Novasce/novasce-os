@@ -17,9 +17,13 @@ pub const RSVG: &str = "/usr/bin/rsvg-convert";
 pub const SYSUSERS: &str = "/usr/bin/systemd-sysusers";
 pub const TMPFILES: &str = "/usr/bin/systemd-tmpfiles";
 pub const SYSTEMCTL: &str = "/usr/bin/systemctl";
+pub const HOSTNAMECTL: &str = "/usr/bin/hostnamectl";
+pub const KWRITECONFIG: &str = "/usr/bin/kwriteconfig6";
 
 pub const LOGIN_SEDE: &str = "sede";
 pub const CAMINHO_PREPARADO: &str = "/etc/novasce/preparado";
+pub const CAMINHO_MACHINE_ID: &str = "/etc/machine-id";
+pub const NOME_DA_SEDE: &str = "novasce-sede";
 
 pub const FONTE_SYSUSERS: &str = "/usr/share/novasce/sede/novasce-agentes.sysusers";
 pub const DESTINO_SYSUSERS: &str = "/etc/sysusers.d/novasce-agentes.conf";
@@ -31,6 +35,10 @@ pub const FONTE_AUTOLOGIN: &str = "/usr/share/novasce/sede/50-novasce-sede-autol
 pub const DESTINO_AUTOLOGIN: &str = "/etc/plasmalogin.conf.d/50-novasce-sede.conf";
 pub const FONTE_TRAVA_DA_TELA: &str = "/usr/share/novasce/sede/kscreenlockerrc";
 pub const FONTE_ENERGIA: &str = "/usr/share/novasce/sede/powerdevilrc";
+pub const FONTE_CARTEIRA: &str = "/usr/share/novasce/sede/kwalletrc";
+pub const FONTE_SESSAO_VAZIA: &str = "/usr/share/novasce/sede/ksmserverrc";
+pub const FONTE_FLAGS_DO_CHROME: &str = "/usr/share/novasce/sede/chrome-flags.conf";
+pub const FONTE_SEM_TERMINAL: &str = "/usr/share/novasce/sede/org.kde.konsole.desktop";
 
 const LOGINS_RESERVADOS: [&str; 4] = ["root", "sede", "agentes", "admin"];
 
@@ -146,7 +154,30 @@ impl Ambiente<'_> {
     }
 }
 
-/// Grava o papel. Na sede, cria o usuário `agentes` e tira a suspensão.
+/// O nome da máquina sai do papel, não do assistente do Aurora (que gravou "eduardo" na
+/// sede em 26/10). O registro no Tenancy lê esse nome. Notebook leva o começo do
+/// machine-id, para dois notebooks nunca terem o mesmo nome.
+pub fn nome_para(papel: Papel, machine_id: &str) -> String {
+    match papel {
+        Papel::Sede => NOME_DA_SEDE.to_string(),
+        Papel::Notebook => {
+            let sufixo: String = machine_id
+                .trim()
+                .chars()
+                .filter(char::is_ascii_hexdigit)
+                .take(4)
+                .collect::<String>()
+                .to_ascii_lowercase();
+            if sufixo.len() == 4 {
+                format!("novasce-notebook-{sufixo}")
+            } else {
+                "novasce-notebook".to_string()
+            }
+        }
+    }
+}
+
+/// Grava o papel e o nome da máquina. Na sede, cria o usuário `agentes` e tira a suspensão.
 /// No notebook, tira o que era só da sede (reinstalar um notebook que voltou).
 pub fn definir_papel(amb: &Ambiente, papel: Papel) -> Result<(), ErroHelper> {
     amb.gravar(
@@ -154,6 +185,8 @@ pub fn definir_papel(amb: &Ambiente, papel: Papel) -> Result<(), ErroHelper> {
         format!("{}\n", papel.como_texto()).as_bytes(),
         0o644,
     )?;
+    let machine_id = fs::read_to_string(amb.caminho(CAMINHO_MACHINE_ID)).unwrap_or_default();
+    amb.rodar(HOSTNAMECTL, &["hostname", &nome_para(papel, &machine_id)])?;
     match papel {
         Papel::Sede => {
             amb.copiar(FONTE_SYSUSERS, DESTINO_SYSUSERS, 0o644)?;
@@ -283,8 +316,9 @@ fn gravar_avatar(amb: &Ambiente, login: &str, nome: &str) -> Result<(), ErroHelp
     Ok(())
 }
 
-/// Conta Sede: entra sozinha ao ligar, sem senha, sem sudo, tela que não tranca
-/// e sem suspender. Rodar de novo não recria a conta.
+/// Conta Sede: entra sozinha ao ligar, sem senha, sem sudo, tela que não tranca,
+/// sem suspender, sem a carteira do KDE, sem terminal e sempre com a sessão vazia.
+/// Rodar de novo não recria a conta.
 pub fn preparar_sede(amb: &Ambiente) -> Result<(), ErroHelper> {
     if ler_papel(&amb.caminho(CAMINHO_PAPEL)) != Some(Papel::Sede) {
         return Err(ErroHelper::NaoESede);
@@ -297,14 +331,46 @@ pub fn preparar_sede(amb: &Ambiente) -> Result<(), ErroHelper> {
     }
     amb.rodar(PASSWD, &["-d", LOGIN_SEDE])?;
     amb.copiar(FONTE_AUTOLOGIN, DESTINO_AUTOLOGIN, 0o644)?;
-    let config = format!("{}/.config", amb.casa_de(LOGIN_SEDE)?);
+    let casa = amb.casa_de(LOGIN_SEDE)?;
+    let config = format!("{casa}/.config");
+    let local = format!("{casa}/.local");
+    let var = format!("{casa}/.var");
     amb.copiar(
         FONTE_TRAVA_DA_TELA,
         &format!("{config}/kscreenlockerrc"),
         0o644,
     )?;
     amb.copiar(FONTE_ENERGIA, &format!("{config}/powerdevilrc"), 0o644)?;
-    amb.rodar(CHOWN, &["-R", "sede:sede", &config])?;
+    amb.copiar(FONTE_CARTEIRA, &format!("{config}/kwalletrc"), 0o644)?;
+    amb.copiar(FONTE_SESSAO_VAZIA, &format!("{config}/ksmserverrc"), 0o644)?;
+    // Vale para todo Chrome da conta Sede, não só para o da Sala.
+    amb.copiar(
+        FONTE_FLAGS_DO_CHROME,
+        &format!("{var}/app/com.google.Chrome/config/chrome-flags.conf"),
+        0o644,
+    )?;
+    // Sem terminal na conta da TV: o Konsole some, e o KDE recusa o Executar comando
+    // e o terminal do Dolphin. O kdeglobals é da conta, então só esta chave muda.
+    amb.copiar(
+        FONTE_SEM_TERMINAL,
+        &format!("{local}/share/applications/org.kde.konsole.desktop"),
+        0o644,
+    )?;
+    amb.rodar(
+        KWRITECONFIG,
+        &[
+            "--file",
+            &format!("{config}/kdeglobals"),
+            "--group",
+            "KDE Action Restrictions",
+            "--key",
+            "shell_access",
+            "false",
+        ],
+    )?;
+    for pasta in [&config, &local, &var] {
+        amb.rodar(CHOWN, &["-R", "sede:sede", pasta])?;
+    }
     Ok(())
 }
 
@@ -376,6 +442,10 @@ mod testes {
             FONTE_AUTOLOGIN,
             FONTE_TRAVA_DA_TELA,
             FONTE_ENERGIA,
+            FONTE_CARTEIRA,
+            FONTE_SESSAO_VAZIA,
+            FONTE_FLAGS_DO_CHROME,
+            FONTE_SEM_TERMINAL,
         ] {
             let caminho = raiz.path().join(fonte.trim_start_matches('/'));
             fs::create_dir_all(caminho.parent().unwrap()).unwrap();
@@ -408,6 +478,32 @@ mod testes {
         );
         assert!(falso.chamou(&format!("{SYSUSERS} {DESTINO_SYSUSERS}")));
         assert!(falso.chamou(&format!("{TMPFILES} --create {DESTINO_TMPFILES}")));
+        assert!(falso.chamou(&format!("{HOSTNAMECTL} hostname novasce-sede")));
+    }
+
+    #[test]
+    fn o_nome_da_maquina_sai_do_papel() {
+        assert_eq!(nome_para(Papel::Sede, "9f3a1c0d7e"), "novasce-sede");
+        assert_eq!(
+            nome_para(Papel::Notebook, "9F3A1C0D7E\n"),
+            "novasce-notebook-9f3a"
+        );
+        assert_eq!(nome_para(Papel::Notebook, ""), "novasce-notebook");
+    }
+
+    #[test]
+    fn papel_notebook_le_o_machine_id() {
+        let raiz = raiz_com_a_imagem();
+        let id = raiz.path().join(CAMINHO_MACHINE_ID.trim_start_matches('/'));
+        fs::create_dir_all(id.parent().unwrap()).unwrap();
+        fs::write(&id, "c0ffee0123456789\n").unwrap();
+        let falso = Falso::com(&[]);
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
+        definir_papel(&amb, Papel::Notebook).unwrap();
+        assert!(falso.chamou(&format!("{HOSTNAMECTL} hostname novasce-notebook-c0ff")));
     }
 
     #[test]
@@ -538,6 +634,42 @@ mod testes {
             format!("conteúdo de {FONTE_ENERGIA}\n")
         );
         assert!(falso.chamou(&format!("{CHOWN} -R sede:sede /home/sede/.config")));
+    }
+
+    #[test]
+    fn a_sede_nasce_sem_carteira_sem_terminal_e_com_a_sessao_vazia() {
+        let raiz = raiz_com_a_imagem();
+        let falso = Falso::com(&[]);
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
+        definir_papel(&amb, Papel::Sede).unwrap();
+        preparar_sede(&amb).unwrap();
+        for (destino, fonte) in [
+            ("/home/sede/.config/kwalletrc", FONTE_CARTEIRA),
+            ("/home/sede/.config/ksmserverrc", FONTE_SESSAO_VAZIA),
+            (
+                "/home/sede/.var/app/com.google.Chrome/config/chrome-flags.conf",
+                FONTE_FLAGS_DO_CHROME,
+            ),
+            (
+                "/home/sede/.local/share/applications/org.kde.konsole.desktop",
+                FONTE_SEM_TERMINAL,
+            ),
+        ] {
+            assert_eq!(ler(raiz.path(), destino), format!("conteúdo de {fonte}\n"));
+        }
+        assert!(falso.chamou(&format!(
+            "{KWRITECONFIG} --file /home/sede/.config/kdeglobals --group KDE Action Restrictions --key shell_access false"
+        )));
+        // O que foi criado como root volta a ser da Sede, senão o Flatpak não grava no .var.
+        for pasta in ["/home/sede/.config", "/home/sede/.local", "/home/sede/.var"] {
+            assert!(
+                falso.chamou(&format!("{CHOWN} -R sede:sede {pasta}")),
+                "{pasta}"
+            );
+        }
     }
 
     #[test]
