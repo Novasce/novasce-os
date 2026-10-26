@@ -32,7 +32,10 @@ confere "ferramentas" "command -v gitleaks rclone ydotool ydotoold wl-copy wl-pa
 
 tmp=$(mktemp -d)
 git -C "$tmp" init -q && git -C "$tmp" config user.email t@t && git -C "$tmp" config user.name t
-printf 'token = "ghp_%s"\n' "$(printf 'a1B2%.0s' 1 2 3 4 5 6 7 8 9)" >"$tmp/nota.md"
+# Token falso gerado na hora: um repetido ("a1B2" x 9) tem entropia baixa e a regra github-pat do
+# gitleaks não dispara. Fora do arquivo, para a proteção de push do GitHub não confundir com um real.
+falso=$(python3 -c "import secrets, string; print(''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(36)))")
+printf 'token = "ghp_%s"\n' "$falso" >"$tmp/nota.md"
 git -C "$tmp" add -A
 confere "gitleaks segura token preparado" "gitleaks git --pre-commit --staged --no-banner --exit-code 0 --report-format json --report-path $tmp/r.json $tmp && grep -q nota.md $tmp/r.json"
 
