@@ -43,7 +43,7 @@ Só se a máquina já tem um sistema. Em 10/2026 a sede ainda tem o Fedora antig
 ## 2. Instalar o Aurora NVIDIA
 
 1. Dar boot pelo pendrive e escolher instalar.
-2. Usar o disco inteiro e apagar tudo.
+2. Usar o disco inteiro e apagar tudo. Se a máquina tiver um segundo disco (o do Windows, em 10/2026 um SSD à parte para jogos), escolher só o principal e deixar o outro desmarcado.
 3. Marcar **Criptografar meus dados** e usar a senha do item 0.6.
 4. Criar o usuário `eduardo` como **administrador**.
 
