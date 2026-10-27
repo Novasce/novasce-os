@@ -7,6 +7,17 @@
 - Quanto tempo: umas 2 horas, com a instalação.
 - Marcado com **[só na máquina]**: o que o CI não consegue provar e só se confirma olhando a tela.
 - Sem a imagem publicada: os itens 0.5 e 0.6, o passo 0 (se a máquina já tem sistema), os passos 1 a 3 e o 3b, que confere a Sala no navegador.
+- **Disco cifrado é obrigatório.** Em 26/10 a sede foi instalada sem a cifra, e cifrar depois quer dizer reinstalar. Sem o disco cifrado, parar no passo 2.
+- Guiado pelo Mac: ver [Pela ponte](#pela-ponte-guiado-pelo-mac) antes de mandar o primeiro script.
+
+## Pela ponte (guiado pelo Mac)
+
+Em 26/10 a sessão foi guiada com a ponte do brain (`_meta/scripts/ponte-sede/`): o Mac serve scripts curtos na rede local e a máquina roda `curl -sS <ip-do-mac>:8765/<nome> | bash`. Num `curl | bash`, o script chega pela entrada padrão.
+
+- Todo comando que lê a entrada padrão leva `</dev/null` dentro do script. Sem isso ele come o resto do script, e os comandos seguintes nunca rodam. Em 26/10 o `ausearch` fez o script do passo 13 sumir cinco vezes. Os scripts da ponte também põem `</dev/null` no `kwriteconfig6`, no `pkill` e no `curl` que devolve a saída.
+- Comando que pede senha ou resposta não vai pela ponte: `sudo novasce-primeiro-uso` (passo 11), `ujust setup-luks-tpm-unlock` (passo 12), `passwd` e o `watch` do passo 7. Esses se digitam na máquina.
+- O `sudo` pede a senha no próprio terminal da máquina (ele lê o `/dev/tty`, não a entrada padrão). Nenhum script lê, guarda ou envia senha.
+- Na conta Sede não há terminal (passo 8). Os scripts rodam na conta `eduardo`.
 
 ## Antes de sair de casa
 
@@ -17,7 +28,7 @@
 | 0.3 | O pacote do GHCR está público | github.com/orgs/Novasce/packages/container/novasce-os/settings, "Change visibility" | `Public`. Sem isso, a máquina não baixa a imagem |
 | 0.4 | A versão publicada | `skopeo inspect docker://ghcr.io/novasce/novasce-os:stable-nvidia \| jq -r '.Labels["org.opencontainers.image.version"]'` | `AAAA.MM.DD.N` |
 | 0.5 | Pendrive de **16 GB ou mais** com o ISO `aurora-nvidia-open-stable-x86_64.iso` (M0, item 6). O ISO tem 7,9 GB e não cabe num de 8 GB | getaurora.dev: Aurora, placa NVIDIA, sem DX. É o mesmo `aurora-nvidia-open` de que a imagem da casa parte. Conferir com `shasum -a 256` contra o arquivo `-CHECKSUM` ao lado do ISO e gravar no Fedora Media Writer (ou `dd` no `/dev/rdiskN` do pendrive, no Mac) | o checksum bate e o pendrive aparece como "Aurora" |
-| 0.6 | Senha forte para o disco e senha de administrador do BIOS (passo 1) | no gerenciador de senhas, nunca no brain | as duas anotadas |
+| 0.6 | Senha forte para o disco, com **6 caracteres ou mais** (o instalador recusa menos), e senha de administrador do BIOS (passo 1) | no gerenciador de senhas, nunca no brain | as duas anotadas |
 
 ## 0. Antes de apagar o sistema que já está lá
 
@@ -44,10 +55,10 @@ Só se a máquina já tem um sistema. Em 10/2026 a sede ainda tem o Fedora antig
 
 1. Dar boot pelo pendrive e escolher instalar.
 2. Usar o disco inteiro e apagar tudo. Se a máquina tiver um segundo disco (o do Windows, em 10/2026 um SSD à parte para jogos), escolher só o principal e deixar o outro desmarcado.
-3. Marcar **Criptografar meus dados** e usar a senha do item 0.6.
+3. Marcar **Criptografar meus dados** e usar a senha do item 0.6. **Obrigatório:** sem a cifra, não seguir. Cifrar depois quer dizer reinstalar a máquina, o passo 11 (agentes) só roda com o disco cifrado e o 12 (TPM) não existe sem ele.
 4. Criar o usuário `eduardo` como **administrador**.
 
-**Esperado:** a instalação termina e pede para reiniciar.
+**Esperado:** a instalação termina e pede para reiniciar. No passo 3, o boot pede a senha do disco: é a prova de que a cifra entrou.
 
 ## 3. Primeiro boot e a chave da Universal Blue (MOK)
 
@@ -91,6 +102,8 @@ sudo bootc status
 
 **Esperado:** o download termina com `Queued for next boot`; `bootc status` mostra `ghcr.io/novasce/novasce-os:stable-nvidia` em **staged**.
 
+O nome da máquina não se troca aqui. O assistente do Aurora grava o nome do usuário (em 26/10, "eduardo"), e o Preparar grava `novasce-sede` no passo 7.1, antes do registro.
+
 Por que passa já na primeira vez: o `--enforce-container-sigpolicy` exige que a política da máquina recuse por padrão o que não tem regra, e a do Aurora recusa. Esta primeira troca confia no TLS do GHCR, porque o Aurora ainda não conhece a chave da Novasce. A partir do próximo boot, a política da própria imagem confere a chave da casa em toda atualização (passo 6).
 
 ## 5. Reiniciar e ver a marca
@@ -106,6 +119,8 @@ systemctl reboot
 - Tela de login: o papel de parede teal com o cata-vento gigante tom sobre tom.
 - Depois do login, a abertura: teal, cata-vento parado e a linha que anda até o fim.
 - Área de trabalho B: barra fina no alto (cata-vento no menu, menu do app, bandeja e relógio) e dock flutuante embaixo com os apps.
+- Papel de parede: o teal da Novasce na área de trabalho, não o do Aurora nem o padrão do KDE. A conta `eduardo` nasceu no Aurora, antes da troca: ela também tem que mostrar o da Novasce. Se não mostrar, anotar e conferir `grep novasce-papel ~/.config/plasmashellrc` (o Plasma anota ali os scripts de atualização que já rodou).
+- Ícones do dock: o Tenancy com o cata-vento branco no degradê teal; Claude, ChatGPT, Gemini e WhatsApp com a marca de cada um num quadrado branco; o Material da casa com a pasta de documentos do KDE. Nenhum quadrado colorido com uma letra.
 
 ## 6. Conferir a assinatura
 
@@ -124,7 +139,7 @@ O Preparar abre sozinho no login do `eduardo` (administrador). Se não abrir, pr
 
 | Passo | O que fazer | Esperado |
 |---|---|---|
-| 7.1 Papel | Escolher **Sede** e Continuar | A linha diz "Placa de vídeo encontrada: NVIDIA GeForce RTX 2060. Esta máquina usa a versão com NVIDIA." O KDE pede a senha de administrador uma vez |
+| 7.1 Papel | Escolher **Sede** e Continuar | A linha diz "Placa de vídeo encontrada: NVIDIA GeForce RTX 2060. Esta máquina usa a versão com NVIDIA." O KDE pede a senha de administrador uma vez. O nome da máquina passa a ser `novasce-sede` (é o nome que o registro manda ao Tenancy). Se o Chrome da conta `eduardo` estava aberto e reclamar que o perfil está "em uso em outro computador", desbloquear o perfil pelo botão do próprio aviso: é o nome que mudou |
 | 7.2 Rede | Com cabo, Continuar | "Esta máquina já está na internet, pelo cabo." |
 | 7.2b Rede por Wi-Fi (sem cabo; na sede é o caminho, porque lá não há cabo) | Tirar o cabo, escolher a rede, digitar a senha e clicar **Conectar** | "Esta máquina já está na internet, pela rede" e o nome dela. Com a senha errada: "Não conectou na rede" e o nome, e a rede não fica em `nmcli connection show` |
 | 7.3 Registro, sem o M2 no ar | Esperar a resposta | "O Tenancy ainda não recebe máquinas." Clicar **Registrar depois** |
@@ -152,13 +167,17 @@ Conferir no terminal:
 
 ```bash
 cat /etc/novasce/papel
+hostnamectl hostname
 getent passwd sede teste
 id teste
 cat /etc/plasmalogin.conf.d/50-novasce-sede.conf
 systemctl status novasce-sinal.timer --no-pager
+sudo ls -l ~sede/.config/kwalletrc ~sede/.config/ksmserverrc \
+  ~sede/.var/app/com.google.Chrome/config/chrome-flags.conf \
+  ~sede/.local/share/applications/org.kde.konsole.desktop
 ```
 
-**Esperado:** `sede`; as duas contas; `teste` **sem** `wheel`; `[Autologin]` com `User=sede`; o timer do sinal ativo.
+**Esperado:** `sede`; `novasce-sede`; as duas contas; `teste` **sem** `wheel`; `[Autologin]` com `User=sede` e **sem** `Relogin`; o timer do sinal ativo; os quatro arquivos da Sede com dono `sede`.
 
 Quantas vezes a senha de administrador foi pedida no Preparar **[só na máquina]**: o esperado é uma vez a cada 5 minutos. Anotar se pediu mais.
 
@@ -173,10 +192,16 @@ Clicar **Reiniciar agora**.
 - Com o M2: parear a TV na página da Sala e reiniciar. Depois do boot, a Sala abre já pareada, sem pedir código de novo (o token fica no perfil do Chrome da Sede; o sistema não guarda token de tela).
 - No primeiro boot, o Chrome pode levar alguns minutos para aparecer (está sendo instalado). Enquanto isso, fica o papel de parede teal.
 - A tela não apaga sozinha e a máquina não suspende.
+- Nenhuma janela da carteira do KDE por cima da Sala, nem no primeiro boot nem depois de reiniciar.
+- Sem terminal na Sede: no menu, buscar "Konsole" não acha nada, e o Ctrl+Alt+T não abre janela.
+
+Página de reserva, sem o Tenancy: tirar o adaptador Wi-Fi USB e reiniciar.
+
+**Esperado [só na máquina]:** o Chrome abre a página "A Sala chega com o Tenancy", com o cata-vento no alto. Nunca "Não foi possível acessar seu arquivo" (era o defeito de 26/10). Repor o adaptador: em até 1 minuto, a Sala abre sozinha no lugar da reserva.
 
 ## 9. Conta pessoal sem sudo
 
-1. No menu da Sede, **Trocar usuário** e entrar como `teste`.
+1. No menu da Sede, **Trocar usuário**: aparece a tela de login com as contas, e não a Sede de novo (em 26/10, com o `Relogin=true`, a tela ficava preta). Entrar como `teste`.
 2. Com a senha vazia, o login pede para criar a senha nova.
 3. Entrar, abrir o Konsole e rodar `sudo -v`.
 4. Ainda no Konsole: `xdg-settings get default-web-browser` e `xdg-mime query default x-scheme-handler/https`.
@@ -191,6 +216,16 @@ Se o login não pedir a senha nova (limite do plasmalogin), o Eduardo define com
 Trocar usuário de volta para **Sede**.
 
 **Esperado [só na máquina]:** volta com Enter, sem senha, e a Sala continua aberta.
+
+## 10b. A Sede volta sozinha
+
+Sem o `Relogin=true`, quem devolve a Sede é a guarda (`novasce-sede-guarda.service`).
+
+1. Na Sede, menu, **Sair**. Na tela de login, não entrar em nada por 2 minutos.
+2. Repetir com uma conta pessoal aberta por trás (passo 9, sem sair dela): na Sede, **Sair**, e esperar 3 minutos.
+3. Na conta `eduardo`: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
+
+**Esperado [só na máquina]:** no 1, depois de uns 2 minutos a tela de login reinicia e a Sede entra sozinha, com a Sala. No 2, nada acontece: a conta pessoal segura a guarda, e a Sede volta quando ela sair. No 3, a linha "A TV ficou 2 minutos só no login. A tela de login reinicia para a Sede entrar." uma vez para o item 1.
 
 ## 11. Agentes
 
@@ -265,7 +300,13 @@ grep IMAGE_VERSION /usr/lib/os-release
 
 | Item | Por que o CI não prova |
 |---|---|
-| Entrada automática da Sede (`[Autologin]`, `Session=plasma.desktop`, `Relogin=true`) | o plasmalogin só roda com tela |
+| Entrada automática da Sede (`[Autologin]`, `Session=plasma.desktop`, sem `Relogin`) e o Trocar usuário mostrando o login | o plasmalogin só roda com tela |
+| A guarda devolve a Sede depois de 2 minutos só no login, e a tela de login que reinicia entra na Sede de novo | depende do plasmalogin e do logind de verdade |
+| Nenhuma carteira do KDE na Sede (`--password-store=basic` e `kwalletrc`) | depende do Chrome e do KWallet na sessão |
+| A página de reserva abre no Chrome do Flatpak (cópia em `~/.var/app/com.google.Chrome/sala-reserva/`) | depende do sandbox do Flatpak |
+| Konsole e Executar comando fora da Sede (`shell_access=false` e o Konsole escondido) | depende do KDE aplicando a restrição |
+| O papel de parede da Novasce na conta nova e na que nasceu no Aurora (`[Wallpaper]` do look-and-feel e o script de atualização do Plasma) | o Plasma só roda com tela |
+| Os ícones do dock em PNG de 256 px, nítidos na TV | depende do tamanho do dock na tela |
 | Layout B: alturas de 30 e 62 px, dock que se ajusta aos apps (`lengthMode = "fit"`) e raio de 8 px | o script de layout só roda no Plasma; o raio vem do tema Breeze |
 | A linha da abertura chega ao fim (estágios 1 a 6 do KSplash) | precisa do KSplash de verdade |
 | O pedido da senha do disco no Plymouth | precisa do boot real |

@@ -36,6 +36,8 @@ echo "== Marca"
 conferir "papel de parede 16:9" test -s /usr/share/wallpapers/Novasce/contents/images/3840x2160.png
 conferir "papel de parede 16:10" test -s /usr/share/wallpapers/Novasce/contents/images/3840x2400.png
 conferir "o papel do Aurora aponta para o da Novasce" test "$(readlink /usr/share/wallpapers/Aurora)" = Novasce
+conferir "conta nova nasce com o papel da Novasce" grep -qx 'Image=Novasce' "$LNF/contents/defaults"
+conferir "conta que já existia ganha o papel da Novasce" grep -q 'wallpapers/Novasce' /usr/share/plasma/shells/org.kde.plasma.desktop/contents/updates/91-novasce-papel-de-parede.js
 conferir "logo teal do menu" grep -q 'fill="#00666C"' /usr/share/icons/hicolor/scalable/apps/novasce-logo.svg
 conferir "ícone start-here é o cata-vento" grep -q 'fill="#00666C"' /usr/share/icons/hicolor/scalable/places/distributor-logo-symbolic.svg
 conferir "fonte Inter instalada" sh -c 'fc-list : family | grep -q "^Inter"'
@@ -72,6 +74,15 @@ conferir "Preparar acha todas as bibliotecas" sh -c '! ldd /usr/bin/novasce-prep
 for f in /usr/share/applications/novasce-*.desktop /etc/xdg/autostart/novasce-*.desktop; do
   conferir "atalho válido: ${f##*/}" desktop-file-validate "$f"
 done
+# PNG de 256 px: a largura mora nos bytes 16 a 19 do arquivo (00 00 01 00).
+for app in tenancy claude chatgpt gemini whatsapp; do
+  conferir "ícone de verdade: $app" sh -c "test \"\$(od -An -tx1 -j16 -N4 /usr/share/icons/hicolor/256x256/apps/novasce-$app.png | tr -d ' \n')\" = 00000100"
+done
+conferir "nenhum ícone com a letra no quadrado" sh -c "! grep -lqs '<text' /usr/share/icons/hicolor/scalable/apps/novasce-*.svg"
+for app in tenancy claude chatgpt gemini whatsapp material; do
+  icone=$(sed -n 's/^Icon=//p' "/usr/share/applications/novasce-$app.desktop")
+  conferir "o ícone do dock acha arquivo: $app ($icone)" sh -c "ls /usr/share/icons/*/*/*/$icone.* 2>/dev/null | grep -q ."
+done
 for app in com.google.Chrome md.obsidian.Obsidian com.bitwarden.desktop; do
   conferir "pré-instala $app" grep -q "\[Flatpak Preinstall $app\]" /usr/share/flatpak/preinstall.d/novasce-*.preinstall
 done
@@ -83,7 +94,7 @@ done
 echo "== Papéis, contas e agentes"
 conferir "política do ajudante" xmllint --noout /usr/share/polkit-1/actions/com.novasce.helper.policy
 conferir "ajudante só para wheel" grep -q 'isInGroup("wheel")' /usr/share/polkit-1/rules.d/50-novasce-helper.rules
-for f in novasce-agentes.sysusers novasce-agentes.tmpfiles 50-novasce-sede-sem-suspender.conf 50-novasce-sede-autologin.conf kscreenlockerrc powerdevilrc; do
+for f in novasce-agentes.sysusers novasce-agentes.tmpfiles 50-novasce-sede-sem-suspender.conf 50-novasce-sede-autologin.conf kscreenlockerrc powerdevilrc kwalletrc ksmserverrc chrome-flags.conf org.kde.konsole.desktop; do
   conferir "arquivo da sede: $f" test -s "/usr/share/novasce/sede/$f"
 done
 conferir "agentes não nascem em todo notebook" test ! -e /usr/lib/sysusers.d/novasce-agentes.conf
@@ -92,6 +103,12 @@ conferir "executor marca a rodada" grep -q 'rodada.lock' /usr/lib/systemd/system
 conferir "sinal ligado" test "$(systemctl --root=/ is-enabled novasce-sinal.timer 2>/dev/null)" = enabled
 conferir "executor desligado até o doctor" test "$(systemctl --root=/ is-enabled novasce-assistente.timer 2>/dev/null)" != enabled
 conferir "Sala com página de reserva" grep -q 'A Sala chega com o Tenancy' /usr/share/novasce/sala-reserva/index.html
+conferir "reserva da Sala numa pasta que o Chrome do Flatpak enxerga" sh -c "grep -q 'RESERVA_PASTA=\"\$HOME/.var/app/' /usr/libexec/novasce/sala && ! grep -q 'file:///usr/share' /usr/libexec/novasce/sala"
+conferir "Chrome da Sala sem a carteira do KDE" grep -q -- '--password-store=basic' /usr/libexec/novasce/sala
+conferir "Chrome da conta Sede sem a carteira do KDE" grep -qx -- '--password-store=basic' /usr/share/novasce/sede/chrome-flags.conf
+conferir "carteira do KDE desligada na Sede" grep -qx 'Enabled=false' /usr/share/novasce/sede/kwalletrc
+conferir "Sede abre sempre vazia" grep -qx 'loginMode=emptySession' /usr/share/novasce/sede/ksmserverrc
+conferir "Konsole escondido na Sede" grep -qx 'Hidden=true' /usr/share/novasce/sede/org.kde.konsole.desktop
 conferir "Sala em perfil que persiste, sem modo anônimo" sh -c "grep -q 'user-data-dir' /usr/libexec/novasce/sala && ! grep -q incognito /usr/libexec/novasce/sala"
 conferir "o sistema não guarda token de tela" sh -c "! grep -rqs 'tela.json' /usr/libexec/novasce /usr/share/novasce /etc/xdg/autostart"
 conferir "nenhuma máquina registrada na imagem" test ! -e /var/lib/novasce/maquina.json

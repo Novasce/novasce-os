@@ -26,6 +26,6 @@ if [ -n "${NOVASCE_GOOGLE_CLIENT_ID:-}" ] && [ -n "${NOVASCE_GOOGLE_CLIENT_SECRE
   mv /tmp/apps.toml /usr/share/novasce/apps.toml
 fi
 
-systemctl enable novasce-sinal-local.socket novasce-login-qr.service novasce-login-qr.path
+systemctl enable novasce-sinal-local.socket novasce-login-qr.service novasce-login-qr.path novasce-sede-guarda.service
 systemctl --global enable novasce-barra.service novasce-sincronizar.service app-org.novasce.voz.service \
   novasce-ydotoold.service novasce-sede.service novasce-tranca.service

@@ -30,7 +30,7 @@ enum PapelArg {
 
 #[derive(Subcommand)]
 enum Comando {
-    /// Grava o papel da máquina e liga o que é só da sede.
+    /// Grava o papel e o nome da máquina, e liga o que é só da sede.
     Papel { papel: PapelArg },
     /// Registra a máquina no Tenancy e espera a aprovação.
     Registrar,
@@ -45,7 +45,7 @@ enum Comando {
         #[arg(long)]
         dono: Option<String>,
     },
-    /// Cria a conta Sede e liga a entrada automática.
+    /// Cria a conta Sede: entrada automática, sem carteira, sem terminal e sem sono.
     PrepararSede,
     /// Marca a máquina como preparada.
     Concluir,

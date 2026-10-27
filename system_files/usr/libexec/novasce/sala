@@ -10,13 +10,21 @@ set -uo pipefail
 [ "$(cat /etc/novasce/papel 2>/dev/null)" = sede ] || exit 0
 
 APP=com.google.Chrome
-RESERVA=file:///usr/share/novasce/sala-reserva/index.html
 PERFIL="$HOME/.var/app/$APP/sala"
 CHROME=
 
+# O Chrome do Flatpak não enxerga o /usr/share da máquina ("Não foi possível acessar seu
+# arquivo", 26/10). A reserva vai para a pasta do próprio app, que ele enxerga.
+RESERVA_PASTA="$HOME/.var/app/$APP/sala-reserva"
+mkdir -p "$RESERVA_PASTA"
+cp -f /usr/share/novasce/sala-reserva/index.html "$RESERVA_PASTA/index.html"
+RESERVA="file://$RESERVA_PASTA/index.html"
+
+# --password-store=basic: o Chrome não chama a carteira do KDE, que pedia para ser criada
+# por cima da Sala (26/10). O token da tela fica no perfil, não na carteira.
 abrir() {
   flatpak run "$APP" --kiosk --no-first-run --no-default-browser-check --noerrdialogs \
-    --disable-session-crashed-bubble --hide-crash-restore-bubble \
+    --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=basic \
     --user-data-dir="$PERFIL" "$1" &
   CHROME=$!
 }

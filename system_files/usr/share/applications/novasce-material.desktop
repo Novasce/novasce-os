@@ -3,5 +3,5 @@ Type=Application
 Name=Material da casa
 Comment=O Material do time no Tenancy
 Exec=/usr/libexec/novasce/abrir-web material
-Icon=novasce-material
+Icon=folder-documents
 Categories=Office;
