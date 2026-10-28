@@ -1,0 +1,11 @@
+# Na sede, o Preparar copia este arquivo para /usr/local/share/applications: o "Voltar à Sede"
+# aparece no menu das contas pessoais. Escolher a Sede no Trocar usuário abriria uma segunda
+# sessão dela (27/10); este tranca a conta e ativa a Sede que já está aberta.
+[Desktop Entry]
+Type=Application
+Name=Voltar à Sede
+Comment=Tranca a sua conta e a TV volta para a Sala
+Exec=/usr/bin/novasce-voltar-a-sede
+Icon=novasce-preparar
+Categories=System;
+Keywords=sede;sala;tv;voltar;trancar;

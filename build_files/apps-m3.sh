@@ -25,7 +25,7 @@ install -Dm0755 "$R/novasce-sinal-local" /out/usr/libexec/novasce/novasce-sinal-
 install -Dm0755 "$R/novasce-login-qr" /out/usr/libexec/novasce/novasce-login-qr
 install -Dm0755 "$R/novasce-git-credencial" /out/usr/libexec/novasce/git-credencial
 install -Dm0755 "$R/novasce-sede-guarda" /out/usr/libexec/novasce/novasce-sede-guarda
-for b in novasce-sincronizar novasce-barra novasce-tranca novasce-navegador-sede novasce-voz-medir; do
+for b in novasce-sincronizar novasce-barra novasce-tranca novasce-voltar-a-sede novasce-navegador-sede novasce-voz-medir; do
   install -Dm0755 "$R/$b" "/out/usr/bin/$b"
 done
 

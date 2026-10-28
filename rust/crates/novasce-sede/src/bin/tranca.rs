@@ -5,7 +5,7 @@ fn main() {
         use novasce_casa::config_casa::ConfigCasa;
         use novasce_casa::sistema::{conta_atual, papel, Papel};
         use novasce_sede::ociosidade::{observar, Evento};
-        use novasce_sede::sessoes::{ativar, listar, sessao_da_sede};
+        use novasce_sede::sessoes::{ativar, listar, sessao_da_sede, trancar};
         let casa = ConfigCasa::carregar();
         if papel() != Papel::Sede || conta_atual() == casa.sede.conta {
             return;
@@ -15,16 +15,7 @@ fn main() {
         std::thread::spawn(move || observar(ms, tx));
         for e in rx {
             if e == Evento::Ocioso {
-                let _ = std::process::Command::new("busctl")
-                    .args([
-                        "--user",
-                        "call",
-                        "org.freedesktop.ScreenSaver",
-                        "/ScreenSaver",
-                        "org.freedesktop.ScreenSaver",
-                        "Lock",
-                    ])
-                    .status();
+                trancar();
                 std::thread::sleep(std::time::Duration::from_secs(1));
                 if let Some(s) = listar()
                     .ok()

@@ -85,6 +85,7 @@ cat <<FALTA
   c) Só com o doctor verde, ligar o agendamento:
      sudo systemctl enable --now novasce-assistente.timer
 
-  d) Destravar o disco pelo TPM (depois de o Secure Boot estar ok):
-     ujust setup-luks-tpm-unlock
+  d) Destravar o disco pelo TPM (depois de o Secure Boot estar ok). Escolha Enable e
+     responda não ao PIN; no boot seguinte, o disco abre sem pedir a senha:
+     ujust toggle-tpm2
 FALTA

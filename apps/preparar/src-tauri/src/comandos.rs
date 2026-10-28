@@ -6,7 +6,7 @@ use novasce_core::sistema::{
 use novasce_core::wifi;
 use serde::Serialize;
 use serde_json::{json, Value};
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Emitter};
 
@@ -72,6 +72,29 @@ fn ajudante(args: &[&str]) -> Result<Vec<Value>, String> {
         .args(args)
         .output()
         .map_err(|e| format!("O ajudante não abriu: {e}"))?;
+    resposta_do_ajudante(saida)
+}
+
+/// Como `ajudante`, com uma linha na entrada padrão. É por onde a senha da pessoa passa: o
+/// pkexec deixa a entrada padrão com o ajudante, e a linha de comando qualquer conta lê.
+fn ajudante_com_entrada(args: &[&str], entrada: &str) -> Result<Vec<Value>, String> {
+    let mut filho = Command::new(PKEXEC)
+        .arg(HELPER)
+        .args(args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("O ajudante não abriu: {e}"))?;
+    if let Some(mut stdin) = filho.stdin.take() {
+        // Se o pkexec for cancelado, a escrita falha; o código de saída diz o motivo.
+        let _ = writeln!(stdin, "{entrada}");
+    }
+    let saida = filho.wait_with_output().map_err(|e| format!("O ajudante parou: {e}"))?;
+    resposta_do_ajudante(saida)
+}
+
+fn resposta_do_ajudante(saida: std::process::Output) -> Result<Vec<Value>, String> {
     let linhas = ler_linhas(&String::from_utf8_lossy(&saida.stdout));
     if saida.status.success() {
         Ok(linhas)
@@ -186,13 +209,13 @@ pub async fn listar_time() -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub async fn criar_conta(nome: String, email: String, dono: Option<String>) -> Result<String, String> {
+pub async fn criar_conta(nome: String, email: String, senha: String, dono: Option<String>) -> Result<String, String> {
     bloqueante(move || {
         let mut args = vec!["criar-conta", "--nome", nome.as_str(), "--email", email.as_str()];
         if let Some(id) = dono.as_deref() {
             args.extend(["--dono", id]);
         }
-        let linhas = ajudante(&args)?;
+        let linhas = ajudante_com_entrada(&args, &senha)?;
         evento(&linhas, "conta")
             .and_then(|v| v["login"].as_str())
             .map(str::to_string)

@@ -36,7 +36,8 @@ enum Comando {
     Registrar,
     /// Lista o time do Tenancy para escolher o dono (só nas primeiras 24 h).
     Time,
-    /// Cria a conta pessoal. Com --dono, também grava o dono do notebook no Tenancy.
+    /// Cria a conta pessoal com a senha da pessoa, que vem numa linha da entrada padrão
+    /// (nunca na linha de comando). Com --dono, também grava o dono do notebook no Tenancy.
     CriarConta {
         #[arg(long)]
         nome: String,
@@ -95,15 +96,17 @@ fn executar(comando: Comando) -> Result<(), String> {
             emitir(json!({"evento": "time", "pessoas": pessoas}));
         }
         Comando::CriarConta { nome, email, dono } => {
-            acoes::conferir_conta_nova(&amb, &nome, &email).map_err(|e| e.to_string())?;
+            let senha =
+                acoes::ler_senha(&mut std::io::stdin().lock()).map_err(|e| e.to_string())?;
+            acoes::conferir_conta_nova(&amb, &nome, &email, &senha).map_err(|e| e.to_string())?;
             if let Some(id) = dono.as_deref() {
                 let token = token_da_maquina()?;
                 cliente()?
                     .definir_dono(&token, id)
                     .map_err(texto_do_tenancy)?;
             }
-            let login =
-                acoes::criar_conta_pessoal(&amb, &nome, &email).map_err(|e| e.to_string())?;
+            let login = acoes::criar_conta_pessoal(&amb, &nome, &email, &senha)
+                .map_err(|e| e.to_string())?;
             emitir(json!({"evento": "conta", "login": login}));
         }
         Comando::PrepararSede => {

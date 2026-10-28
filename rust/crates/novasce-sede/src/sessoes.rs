@@ -13,9 +13,48 @@ pub struct Sessao {
 
 const TELAS_DE_LOGIN: [&str; 4] = ["plasmalogin", "sddm", "gdm", "lightdm"];
 
+/// A sessão da Sede no seat0. A que está fechando não serve para voltar.
 pub fn sessao_da_sede<'a>(l: &'a [Sessao], conta_sede: &str) -> Option<&'a Sessao> {
     l.iter()
-        .find(|s| s.usuario == conta_sede && s.assento == "seat0")
+        .find(|s| s.usuario == conta_sede && s.assento == "seat0" && s.estado != "closing")
+}
+
+/// O que o "Voltar à Sede" de uma conta pessoal faz.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Volta {
+    /// Máquina que não é a sede: não há Sede para onde voltar.
+    SoNaSede,
+    /// Quem pediu já é a conta Sede.
+    JaNaSede,
+    /// A Sede não está aberta. Ela volta sozinha quando a conta pessoal encerrar a sessão (a guarda).
+    SedeFechada,
+    /// Tranca esta conta e ativa a sessão da Sede, como a tranca faz depois de 5 minutos.
+    Ativar(String),
+}
+
+pub fn como_voltar(e_sede: bool, conta_atual: &str, conta_sede: &str, l: &[Sessao]) -> Volta {
+    if !e_sede {
+        return Volta::SoNaSede;
+    }
+    if conta_atual == conta_sede {
+        return Volta::JaNaSede;
+    }
+    match sessao_da_sede(l, conta_sede) {
+        Some(s) => Volta::Ativar(s.id.clone()),
+        None => Volta::SedeFechada,
+    }
+}
+
+/// O texto do aviso quando a volta não acontece.
+pub fn aviso_da_volta(v: &Volta) -> Option<&'static str> {
+    match v {
+        Volta::Ativar(_) => None,
+        Volta::SoNaSede => Some("Só a máquina da sede tem a conta Sede."),
+        Volta::JaNaSede => Some("Esta já é a conta Sede."),
+        Volta::SedeFechada => Some(
+            "A Sede não está aberta. Encerre a sua sessão, e em uns 2 minutos a TV volta para a Sala.",
+        ),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,21 +79,43 @@ pub fn pode_reiniciar(agentes: &str, l: &[Sessao], conta_sede: &str) -> PodeRein
     }
 }
 
-/// A TV está só na tela de login: há uma tela de login no seat0 e nenhuma conta dentro.
+/// O que a TV da sede mostra, para a guarda decidir.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Tela {
+    /// A Sede na frente, uma conta pessoal aberta (mesmo trancada), um terminal no seat0,
+    /// ou o boot ainda sem tela de login: a guarda não mexe.
+    Ocupada,
+    /// Só a tela de login, sem a Sede: reiniciar a tela de login faz a Sede entrar de novo.
+    SoLogin,
+    /// A tela de login na frente e a Sede aberta por trás, sem conta pessoal (alguém encerrou
+    /// a sessão depois de um Trocar usuário): ativar a sessão da Sede (decisão de 27/10).
+    SedePorTras(String),
+}
+
 /// Sessão fechando não conta; terminal (Ctrl+Alt+F3) no seat0 conta como conta dentro.
-pub fn so_a_tela_de_login(l: &[Sessao]) -> bool {
+pub fn o_que_a_tv_mostra(l: &[Sessao], conta_sede: &str) -> Tela {
     let mut tela_de_login = false;
+    let mut sede = None;
     for s in l
         .iter()
         .filter(|s| s.assento == "seat0" && s.estado != "closing")
     {
         if TELAS_DE_LOGIN.contains(&s.usuario.as_str()) {
             tela_de_login = true;
+        } else if s.usuario == conta_sede {
+            if s.estado == "active" {
+                return Tela::Ocupada;
+            }
+            sede = Some(s.id.clone());
         } else if !s.usuario.is_empty() {
-            return false;
+            return Tela::Ocupada;
         }
     }
-    tela_de_login
+    match (tela_de_login, sede) {
+        (false, _) => Tela::Ocupada,
+        (true, Some(id)) => Tela::SedePorTras(id),
+        (true, None) => Tela::SoLogin,
+    }
 }
 
 /// Conta as conferências seguidas com a TV só no login. Na `vezes`-ésima seguida,
@@ -155,6 +216,52 @@ pub fn ativar(id: &str) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// Tranca a conta desta sessão. Nenhum app fecha; na volta, o KDE pede a senha da pessoa.
+#[cfg(target_os = "linux")]
+pub fn trancar() {
+    let _ = Command::new("busctl")
+        .args([
+            "--user",
+            "call",
+            "org.freedesktop.ScreenSaver",
+            "/ScreenSaver",
+            "org.freedesktop.ScreenSaver",
+            "Lock",
+        ])
+        .status();
+}
+
+/// Aviso do KDE no canto da tela, pela interface padrão de notificações.
+#[cfg(target_os = "linux")]
+pub fn avisar(titulo: &str, texto: &str) -> Result<(), String> {
+    use std::collections::HashMap;
+    let con = zbus::blocking::Connection::session().map_err(|e| e.to_string())?;
+    let p = zbus::blocking::Proxy::new(
+        &con,
+        "org.freedesktop.Notifications",
+        "/org/freedesktop/Notifications",
+        "org.freedesktop.Notifications",
+    )
+    .map_err(|e| e.to_string())?;
+    let acoes: Vec<&str> = Vec::new();
+    let dicas: HashMap<&str, zbus::zvariant::Value> = HashMap::new();
+    p.call::<_, _, u32>(
+        "Notify",
+        &(
+            "Novasce",
+            0u32,
+            "novasce-ajuda",
+            titulo,
+            texto,
+            acoes,
+            dicas,
+            8000i32,
+        ),
+    )
+    .map(|_| ())
+    .map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod testes {
     use super::*;
@@ -168,11 +275,45 @@ mod testes {
         }
     }
 
+    fn com_estado(id: &str, u: &str, estado: &str) -> Sessao {
+        Sessao {
+            estado: estado.into(),
+            ..s(id, u)
+        }
+    }
+
     #[test]
     fn acha_a_sessao_da_sede() {
         let l = vec![s("3", "luan"), s("2", "sede")];
         assert_eq!(sessao_da_sede(&l, "sede").unwrap().id, "2");
         assert!(sessao_da_sede(&[s("3", "luan")], "sede").is_none());
+        // A Sede que está fechando não serve: a nova, sim.
+        let l = vec![
+            com_estado("2", "sede", "closing"),
+            com_estado("8", "sede", "online"),
+        ];
+        assert_eq!(sessao_da_sede(&l, "sede").unwrap().id, "8");
+        assert!(sessao_da_sede(&[com_estado("2", "sede", "closing")], "sede").is_none());
+    }
+
+    #[test]
+    fn voltar_a_sede_so_da_conta_pessoal_na_maquina_da_sede() {
+        let l = vec![com_estado("2", "sede", "online"), s("3", "luan")];
+        assert_eq!(
+            como_voltar(true, "luan", "sede", &l),
+            Volta::Ativar("2".into())
+        );
+        assert_eq!(como_voltar(false, "luan", "sede", &l), Volta::SoNaSede);
+        assert_eq!(como_voltar(true, "sede", "sede", &l), Volta::JaNaSede);
+        assert_eq!(
+            como_voltar(true, "luan", "sede", &[s("3", "luan")]),
+            Volta::SedeFechada
+        );
+        assert_eq!(aviso_da_volta(&Volta::Ativar("2".into())), None);
+        for v in [Volta::SoNaSede, Volta::JaNaSede, Volta::SedeFechada] {
+            let aviso = aviso_da_volta(&v).unwrap();
+            assert!(!aviso.contains('\u{2014}'), "{aviso}");
+        }
     }
 
     #[test]
@@ -196,29 +337,62 @@ mod testes {
     }
 
     #[test]
-    fn so_a_tela_de_login_quando_ninguem_esta_dentro() {
-        let fechando = Sessao {
-            estado: "closing".into(),
-            ..s("2", "sede")
-        };
+    fn a_guarda_le_o_que_a_tv_mostra() {
+        let login = s("9", "plasmalogin");
+        let fechando = com_estado("2", "sede", "closing");
         let por_ssh = Sessao {
             assento: String::new(),
             ..s("7", "eduardo")
         };
-        assert!(so_a_tela_de_login(&[s("9", "plasmalogin")]));
-        assert!(so_a_tela_de_login(&[fechando, s("9", "plasmalogin")]));
-        assert!(so_a_tela_de_login(&[por_ssh, s("9", "plasmalogin")]));
-        // A Sede ou uma conta pessoal dentro: a guarda não mexe.
-        assert!(!so_a_tela_de_login(&[
-            s("2", "sede"),
-            s("9", "plasmalogin")
-        ]));
-        assert!(!so_a_tela_de_login(&[
-            s("3", "luan"),
-            s("9", "plasmalogin")
-        ]));
+        // Só o login, ninguém dentro: reiniciar a tela de login.
+        assert_eq!(
+            o_que_a_tv_mostra(std::slice::from_ref(&login), "sede"),
+            Tela::SoLogin
+        );
+        assert_eq!(
+            o_que_a_tv_mostra(&[fechando, login.clone()], "sede"),
+            Tela::SoLogin
+        );
+        assert_eq!(
+            o_que_a_tv_mostra(&[por_ssh, login.clone()], "sede"),
+            Tela::SoLogin
+        );
+        // A Sede na frente: a guarda não mexe.
+        assert_eq!(
+            o_que_a_tv_mostra(&[s("2", "sede"), login.clone()], "sede"),
+            Tela::Ocupada
+        );
+        assert_eq!(o_que_a_tv_mostra(&[s("2", "sede")], "sede"), Tela::Ocupada);
+        // Conta pessoal aberta, mesmo trancada por trás da Sede: não mexe.
+        assert_eq!(
+            o_que_a_tv_mostra(&[s("3", "luan"), login.clone()], "sede"),
+            Tela::Ocupada
+        );
+        assert_eq!(
+            o_que_a_tv_mostra(
+                &[
+                    com_estado("2", "sede", "online"),
+                    com_estado("3", "luan", "online"),
+                    login.clone()
+                ],
+                "sede"
+            ),
+            Tela::Ocupada
+        );
+        // A conta pessoal encerrou a sessão e a Sede ficou por trás: ativar a Sede.
+        assert_eq!(
+            o_que_a_tv_mostra(
+                &[
+                    com_estado("2", "sede", "online"),
+                    com_estado("3", "luan", "closing"),
+                    login
+                ],
+                "sede"
+            ),
+            Tela::SedePorTras("2".into())
+        );
         // Sem tela de login (o boot ainda não terminou), também não.
-        assert!(!so_a_tela_de_login(&[]));
+        assert_eq!(o_que_a_tv_mostra(&[], "sede"), Tela::Ocupada);
     }
 
     #[test]

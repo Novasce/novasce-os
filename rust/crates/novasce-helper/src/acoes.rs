@@ -4,13 +4,16 @@
 use novasce_core::contrato::Papel;
 use novasce_core::sistema::{ler_papel, CAMINHO_PAPEL};
 use std::fs;
+use std::io::{BufRead, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 pub const USERADD: &str = "/usr/sbin/useradd";
+pub const USERMOD: &str = "/usr/sbin/usermod";
+pub const USERDEL: &str = "/usr/sbin/userdel";
 pub const PASSWD: &str = "/usr/bin/passwd";
-pub const CHAGE: &str = "/usr/bin/chage";
+pub const CHPASSWD: &str = "/usr/sbin/chpasswd";
 pub const GETENT: &str = "/usr/bin/getent";
 pub const CHOWN: &str = "/usr/bin/chown";
 pub const RSVG: &str = "/usr/bin/rsvg-convert";
@@ -21,6 +24,12 @@ pub const HOSTNAMECTL: &str = "/usr/bin/hostnamectl";
 pub const KWRITECONFIG: &str = "/usr/bin/kwriteconfig6";
 
 pub const LOGIN_SEDE: &str = "sede";
+/// A tela de login do Plasma não tem lista de contas escondidas (como o HideUsers do SDDM): ela
+/// só deixa de fora quem tem o shell nologin ou false, ou o UID fora do login.defs
+/// (UserModel::populate no plasma-login-manager). A entrada automática não olha o shell no
+/// Fedora (sem pam_shells no plasmalogin-autologin), e o Plasma sobe pelo /bin/sh.
+pub const SHELL_DA_SEDE: &str = "/usr/sbin/nologin";
+pub const SENHA_MINIMA: usize = 8;
 pub const CAMINHO_PREPARADO: &str = "/etc/novasce/preparado";
 pub const CAMINHO_MACHINE_ID: &str = "/etc/machine-id";
 pub const NOME_DA_SEDE: &str = "novasce-sede";
@@ -39,6 +48,12 @@ pub const FONTE_CARTEIRA: &str = "/usr/share/novasce/sede/kwalletrc";
 pub const FONTE_SESSAO_VAZIA: &str = "/usr/share/novasce/sede/ksmserverrc";
 pub const FONTE_FLAGS_DO_CHROME: &str = "/usr/share/novasce/sede/chrome-flags.conf";
 pub const FONTE_SEM_TERMINAL: &str = "/usr/share/novasce/sede/org.kde.konsole.desktop";
+pub const FONTE_VOLTAR: &str = "/usr/share/novasce/sede/novasce-voltar-a-sede.desktop";
+/// /usr/local/share/applications entra no menu de toda conta (XDG_DATA_DIRS) e é gravável
+/// numa máquina bootc (/usr/local aponta para /var/usrlocal). Só a sede ganha o arquivo.
+pub const DESTINO_VOLTAR: &str = "/usr/local/share/applications/novasce-voltar-a-sede.desktop";
+pub const FONTE_VOLTAR_NA_SEDE: &str =
+    "/usr/share/novasce/sede/novasce-voltar-a-sede-na-sede.desktop";
 
 const LOGINS_RESERVADOS: [&str; 4] = ["root", "sede", "agentes", "admin"];
 
@@ -46,6 +61,10 @@ const LOGINS_RESERVADOS: [&str; 4] = ["root", "sede", "agentes", "admin"];
 pub enum ErroHelper {
     #[error("O nome precisa ter de 1 a 80 letras, sem dois-pontos nem vírgula.")]
     NomeInvalido,
+    #[error("A senha precisa ter pelo menos 8 caracteres, numa linha só.")]
+    SenhaInvalida,
+    #[error("O sistema não aceitou a senha da conta {0}. A conta não foi criada; tente de novo.")]
+    SenhaRecusada(String),
     #[error("Não deu para montar o nome de usuário a partir do e-mail {0}.")]
     EmailInvalido(String),
     #[error("Já existe a conta {0} nesta máquina.")]
@@ -63,6 +82,14 @@ pub enum ErroHelper {
 
 pub trait Executor {
     fn rodar(&self, programa: &str, args: &[&str]) -> Result<String, ErroHelper>;
+    /// Como `rodar`, com `entrada` na entrada padrão. É por onde a senha passa: nunca na linha
+    /// de comando (qualquer conta lê /proc/<pid>/cmdline) nem em log.
+    fn rodar_com_entrada(
+        &self,
+        programa: &str,
+        args: &[&str],
+        entrada: &str,
+    ) -> Result<String, ErroHelper>;
 }
 
 /// Executa de verdade, sem shell no meio.
@@ -78,14 +105,41 @@ impl Executor for ExecutorReal {
                     programa: programa.to_string(),
                     detalhe: e.to_string(),
                 })?;
-        if saida.status.success() {
-            Ok(String::from_utf8_lossy(&saida.stdout).into_owned())
-        } else {
-            Err(ErroHelper::Comando {
-                programa: programa.to_string(),
-                detalhe: String::from_utf8_lossy(&saida.stderr).trim().to_string(),
-            })
+        resultado(programa, saida)
+    }
+
+    fn rodar_com_entrada(
+        &self,
+        programa: &str,
+        args: &[&str],
+        entrada: &str,
+    ) -> Result<String, ErroHelper> {
+        let erro = |e: std::io::Error| ErroHelper::Comando {
+            programa: programa.to_string(),
+            detalhe: e.to_string(),
+        };
+        let mut filho = Command::new(programa)
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(erro)?;
+        if let Some(mut stdin) = filho.stdin.take() {
+            stdin.write_all(entrada.as_bytes()).map_err(erro)?;
         }
+        resultado(programa, filho.wait_with_output().map_err(erro)?)
+    }
+}
+
+fn resultado(programa: &str, saida: std::process::Output) -> Result<String, ErroHelper> {
+    if saida.status.success() {
+        Ok(String::from_utf8_lossy(&saida.stdout).into_owned())
+    } else {
+        Err(ErroHelper::Comando {
+            programa: programa.to_string(),
+            detalhe: String::from_utf8_lossy(&saida.stderr).trim().to_string(),
+        })
     }
 }
 
@@ -201,6 +255,7 @@ pub fn definir_papel(amb: &Ambiente, papel: Papel) -> Result<(), ErroHelper> {
                 DESTINO_TMPFILES,
                 DESTINO_SONO,
                 DESTINO_AUTOLOGIN,
+                DESTINO_VOLTAR,
             ] {
                 amb.remover(destino)?;
             }
@@ -258,9 +313,39 @@ fn sem_acento(letra: char) -> char {
     }
 }
 
-/// Confere tudo antes de qualquer efeito: nome, login e se a conta já existe.
-pub fn conferir_conta_nova(amb: &Ambiente, nome: &str, email: &str) -> Result<String, ErroHelper> {
+/// A senha da pessoa: pelo menos 8 caracteres, numa linha só (o chpasswd lê uma conta por linha).
+pub fn validar_senha(senha: &str) -> Result<(), ErroHelper> {
+    let invalida = senha.chars().count() < SENHA_MINIMA
+        || senha.chars().count() > 256
+        || senha.chars().any(char::is_control);
+    if invalida {
+        Err(ErroHelper::SenhaInvalida)
+    } else {
+        Ok(())
+    }
+}
+
+/// A senha chega ao ajudante pela entrada padrão, numa linha, e nunca é ecoada.
+pub fn ler_senha(entrada: &mut impl BufRead) -> Result<String, ErroHelper> {
+    let mut linha = String::new();
+    entrada
+        .read_line(&mut linha)
+        .map_err(|_| ErroHelper::SenhaInvalida)?;
+    let senha = linha.strip_suffix('\n').unwrap_or(&linha);
+    let senha = senha.strip_suffix('\r').unwrap_or(senha);
+    validar_senha(senha)?;
+    Ok(senha.to_string())
+}
+
+/// Confere tudo antes de qualquer efeito: nome, senha, login e se a conta já existe.
+pub fn conferir_conta_nova(
+    amb: &Ambiente,
+    nome: &str,
+    email: &str,
+    senha: &str,
+) -> Result<String, ErroHelper> {
     validar_nome(nome)?;
+    validar_senha(senha)?;
     let login = login_para(email)?;
     if amb.existe_usuario(&login) {
         return Err(ErroHelper::ContaExiste(login));
@@ -268,14 +353,27 @@ pub fn conferir_conta_nova(amb: &Ambiente, nome: &str, email: &str) -> Result<St
     Ok(login)
 }
 
-/// Conta pessoal: sem `wheel` (sem sudo), sem senha e com a senha vencida,
-/// para a pessoa criar a dela no primeiro login.
-pub fn criar_conta_pessoal(amb: &Ambiente, nome: &str, email: &str) -> Result<String, ErroHelper> {
-    let login = conferir_conta_nova(amb, nome, email)?;
+/// Conta pessoal: sem `wheel` (sem sudo) e já com a senha que a pessoa digitou no Preparar
+/// (decisão de 27/10). A senha vazia vencida (passwd -d e chage -d 0) não entrava: o
+/// plasmalogin-helper falhava no chauthtok sem mostrar a troca.
+pub fn criar_conta_pessoal(
+    amb: &Ambiente,
+    nome: &str,
+    email: &str,
+    senha: &str,
+) -> Result<String, ErroHelper> {
+    let login = conferir_conta_nova(amb, nome, email, senha)?;
     let nome = nome.trim();
     amb.rodar(USERADD, &["-m", "-c", nome, "-s", "/bin/bash", &login])?;
-    amb.rodar(PASSWD, &["-d", &login])?;
-    amb.rodar(CHAGE, &["-d", "0", &login])?;
+    // O erro do chpasswd não volta para a tela: só o aviso, e a conta sai para tentar de novo.
+    if amb
+        .executor
+        .rodar_com_entrada(CHPASSWD, &[], &format!("{login}:{senha}\n"))
+        .is_err()
+    {
+        let _ = amb.rodar(USERDEL, &["-r", &login]);
+        return Err(ErroHelper::SenhaRecusada(login));
+    }
     gravar_avatar(amb, &login, nome)?;
     Ok(login)
 }
@@ -317,20 +415,24 @@ fn gravar_avatar(amb: &Ambiente, login: &str, nome: &str) -> Result<(), ErroHelp
 }
 
 /// Conta Sede: entra sozinha ao ligar, sem senha, sem sudo, tela que não tranca,
-/// sem suspender, sem a carteira do KDE, sem terminal e sempre com a sessão vazia.
-/// Rodar de novo não recria a conta.
+/// sem suspender, sem a carteira do KDE, sem terminal, fora da lista da tela de login e
+/// sempre com a sessão vazia. As contas pessoais ganham o "Voltar à Sede" no menu.
+/// Rodar de novo não recria a conta, e leva a Sede que já existe ao estado de agora.
 pub fn preparar_sede(amb: &Ambiente) -> Result<(), ErroHelper> {
     if ler_papel(&amb.caminho(CAMINHO_PAPEL)) != Some(Papel::Sede) {
         return Err(ErroHelper::NaoESede);
     }
-    if !amb.existe_usuario(LOGIN_SEDE) {
+    if amb.existe_usuario(LOGIN_SEDE) {
+        amb.rodar(USERMOD, &["-s", SHELL_DA_SEDE, LOGIN_SEDE])?;
+    } else {
         amb.rodar(
             USERADD,
-            &["-m", "-c", "Sede", "-s", "/bin/bash", LOGIN_SEDE],
+            &["-m", "-c", "Sede", "-s", SHELL_DA_SEDE, LOGIN_SEDE],
         )?;
     }
     amb.rodar(PASSWD, &["-d", LOGIN_SEDE])?;
     amb.copiar(FONTE_AUTOLOGIN, DESTINO_AUTOLOGIN, 0o644)?;
+    amb.copiar(FONTE_VOLTAR, DESTINO_VOLTAR, 0o644)?;
     let casa = amb.casa_de(LOGIN_SEDE)?;
     let config = format!("{casa}/.config");
     let local = format!("{casa}/.local");
@@ -354,6 +456,12 @@ pub fn preparar_sede(amb: &Ambiente) -> Result<(), ErroHelper> {
     amb.copiar(
         FONTE_SEM_TERMINAL,
         &format!("{local}/share/applications/org.kde.konsole.desktop"),
+        0o644,
+    )?;
+    // Na própria Sede, o "Voltar à Sede" some do menu (mesmo nome, Hidden=true).
+    amb.copiar(
+        FONTE_VOLTAR_NA_SEDE,
+        &format!("{local}/share/applications/novasce-voltar-a-sede.desktop"),
         0o644,
     )?;
     amb.rodar(
@@ -385,17 +493,22 @@ mod testes {
     use std::cell::RefCell;
     use std::path::Path;
 
-    /// Executor falso: anota cada comando e simula o `getent` e o `useradd`.
+    /// Executor falso: anota cada comando (e, à parte, o que entrou pela entrada padrão) e
+    /// simula o `getent` e o `useradd`.
     struct Falso {
         chamadas: RefCell<Vec<String>>,
+        entradas: RefCell<Vec<(String, String)>>,
         usuarios: RefCell<Vec<String>>,
+        recusa_a_senha: bool,
     }
 
     impl Falso {
         fn com(usuarios: &[&str]) -> Self {
             Self {
                 chamadas: RefCell::new(Vec::new()),
+                entradas: RefCell::new(Vec::new()),
                 usuarios: RefCell::new(usuarios.iter().map(|u| u.to_string()).collect()),
+                recusa_a_senha: false,
             }
         }
         fn chamou(&self, comando: &str) -> bool {
@@ -431,6 +544,27 @@ mod testes {
                 _ => Ok(String::new()),
             }
         }
+
+        fn rodar_com_entrada(
+            &self,
+            programa: &str,
+            args: &[&str],
+            entrada: &str,
+        ) -> Result<String, ErroHelper> {
+            self.chamadas
+                .borrow_mut()
+                .push(format!("{programa} {}", args.join(" ")));
+            self.entradas
+                .borrow_mut()
+                .push((programa.to_string(), entrada.to_string()));
+            if self.recusa_a_senha {
+                return Err(ErroHelper::Comando {
+                    programa: programa.into(),
+                    detalhe: "pam_chauthtok() failed".into(),
+                });
+            }
+            Ok(String::new())
+        }
     }
 
     fn raiz_com_a_imagem() -> tempfile::TempDir {
@@ -446,6 +580,8 @@ mod testes {
             FONTE_SESSAO_VAZIA,
             FONTE_FLAGS_DO_CHROME,
             FONTE_SEM_TERMINAL,
+            FONTE_VOLTAR,
+            FONTE_VOLTAR_NA_SEDE,
         ] {
             let caminho = raiz.path().join(fonte.trim_start_matches('/'));
             fs::create_dir_all(caminho.parent().unwrap()).unwrap();
@@ -515,8 +651,7 @@ mod testes {
             executor: &falso,
         };
         definir_papel(&amb, Papel::Sede).unwrap();
-        amb.copiar(FONTE_AUTOLOGIN, DESTINO_AUTOLOGIN, 0o644)
-            .unwrap();
+        preparar_sede(&amb).unwrap();
         definir_papel(&amb, Papel::Notebook).unwrap();
         assert_eq!(ler(raiz.path(), CAMINHO_PAPEL), "notebook\n");
         for destino in [
@@ -524,6 +659,7 @@ mod testes {
             DESTINO_TMPFILES,
             DESTINO_SONO,
             DESTINO_AUTOLOGIN,
+            DESTINO_VOLTAR,
         ] {
             assert!(
                 !raiz.path().join(destino.trim_start_matches('/')).exists(),
@@ -550,26 +686,92 @@ mod testes {
         assert!(validar_nome("Luan, Silva").is_err());
     }
 
+    const SENHA: &str = "cata vento 7";
+
     #[test]
-    fn conta_pessoal_sem_sudo_e_com_senha_no_primeiro_login() {
+    fn conta_pessoal_sem_sudo_e_com_a_senha_da_pessoa() {
         let raiz = raiz_com_a_imagem();
         let falso = Falso::com(&[]);
         let amb = Ambiente {
             raiz: raiz.path().to_path_buf(),
             executor: &falso,
         };
-        let login = criar_conta_pessoal(&amb, "Luan Silva", "luan.silva@novasce.com").unwrap();
+        let login =
+            criar_conta_pessoal(&amb, "Luan Silva", "luan.silva@novasce.com", SENHA).unwrap();
         assert_eq!(login, "luan-silva");
         assert!(falso.chamou(&format!(
             "{USERADD} -m -c Luan Silva -s /bin/bash luan-silva"
         )));
-        assert!(falso.chamou(&format!("{PASSWD} -d luan-silva")));
-        assert!(falso.chamou(&format!("{CHAGE} -d 0 luan-silva")));
+        // A senha vai pela entrada padrão do chpasswd, nunca num argumento.
+        assert_eq!(
+            *falso.entradas.borrow(),
+            vec![(CHPASSWD.to_string(), format!("luan-silva:{SENHA}\n"))]
+        );
+        assert!(!falso.chamadas.borrow().iter().any(|c| c.contains(SENHA)));
+        // A senha vazia que vence no primeiro login saiu (27/10).
+        assert!(!falso
+            .chamadas
+            .borrow()
+            .iter()
+            .any(|c| c.starts_with(PASSWD)));
+        assert!(!falso.chamadas.borrow().iter().any(|c| c.contains("chage")));
         assert!(!falso.chamadas.borrow().iter().any(|c| c.contains("wheel")));
         assert_eq!(
             ler(raiz.path(), "/var/lib/AccountsService/users/luan-silva"),
             "[User]\nIcon=/var/lib/AccountsService/icons/luan-silva\n"
         );
+    }
+
+    #[test]
+    fn senha_recusada_pelo_sistema_desfaz_a_conta() {
+        let raiz = raiz_com_a_imagem();
+        let falso = Falso {
+            recusa_a_senha: true,
+            ..Falso::com(&[])
+        };
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
+        let erro =
+            criar_conta_pessoal(&amb, "Luan Silva", "luan.silva@novasce.com", SENHA).unwrap_err();
+        assert!(matches!(erro, ErroHelper::SenhaRecusada(ref l) if l == "luan-silva"));
+        assert!(!erro.to_string().contains(SENHA));
+        assert!(falso.chamou(&format!("{USERDEL} -r luan-silva")));
+        assert!(!raiz
+            .path()
+            .join("var/lib/AccountsService/users/luan-silva")
+            .exists());
+    }
+
+    #[test]
+    fn senha_curta_ou_com_quebra_de_linha_para_antes_de_tudo() {
+        let raiz = raiz_com_a_imagem();
+        let falso = Falso::com(&[]);
+        let amb = Ambiente {
+            raiz: raiz.path().to_path_buf(),
+            executor: &falso,
+        };
+        for senha in ["", "1234567", "cata\nvento 7"] {
+            let erro = criar_conta_pessoal(&amb, "Luan Silva", "luan.silva@novasce.com", senha)
+                .unwrap_err();
+            assert!(matches!(erro, ErroHelper::SenhaInvalida), "{senha:?}");
+        }
+        assert!(falso.chamadas.borrow().is_empty());
+        assert!(validar_senha("12345678").is_ok());
+    }
+
+    #[test]
+    fn a_senha_chega_numa_linha_da_entrada_padrao() {
+        let mut entrada = std::io::Cursor::new(format!("{SENHA}\r\n"));
+        assert_eq!(ler_senha(&mut entrada).unwrap(), SENHA);
+        let mut sem_fim_de_linha = std::io::Cursor::new(SENHA);
+        assert_eq!(ler_senha(&mut sem_fim_de_linha).unwrap(), SENHA);
+        let mut vazia = std::io::Cursor::new("");
+        assert!(matches!(
+            ler_senha(&mut vazia),
+            Err(ErroHelper::SenhaInvalida)
+        ));
     }
 
     #[test]
@@ -580,7 +782,8 @@ mod testes {
             raiz: raiz.path().to_path_buf(),
             executor: &falso,
         };
-        let erro = conferir_conta_nova(&amb, "Luan Silva", "luan.silva@novasce.com").unwrap_err();
+        let erro =
+            conferir_conta_nova(&amb, "Luan Silva", "luan.silva@novasce.com", SENHA).unwrap_err();
         assert!(matches!(erro, ErroHelper::ContaExiste(l) if l == "luan-silva"));
         assert!(!falso
             .chamadas
@@ -619,7 +822,8 @@ mod testes {
         };
         definir_papel(&amb, Papel::Sede).unwrap();
         preparar_sede(&amb).unwrap();
-        assert!(falso.chamou(&format!("{USERADD} -m -c Sede -s /bin/bash sede")));
+        // Shell nologin: a Sede sai da lista da tela de login e continua entrando sozinha.
+        assert!(falso.chamou(&format!("{USERADD} -m -c Sede -s /usr/sbin/nologin sede")));
         assert!(falso.chamou(&format!("{PASSWD} -d sede")));
         assert_eq!(
             ler(raiz.path(), DESTINO_AUTOLOGIN),
@@ -657,6 +861,11 @@ mod testes {
                 "/home/sede/.local/share/applications/org.kde.konsole.desktop",
                 FONTE_SEM_TERMINAL,
             ),
+            (
+                "/home/sede/.local/share/applications/novasce-voltar-a-sede.desktop",
+                FONTE_VOLTAR_NA_SEDE,
+            ),
+            (DESTINO_VOLTAR, FONTE_VOLTAR),
         ] {
             assert_eq!(ler(raiz.path(), destino), format!("conteúdo de {fonte}\n"));
         }
@@ -687,6 +896,8 @@ mod testes {
             .borrow()
             .iter()
             .any(|c| c.starts_with(USERADD)));
+        // A Sede que nasceu com /bin/bash (antes de 27/10) sai da lista da tela de login.
+        assert!(falso.chamou(&format!("{USERMOD} -s /usr/sbin/nologin sede")));
     }
 
     #[test]

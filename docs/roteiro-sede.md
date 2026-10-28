@@ -15,7 +15,8 @@
 Em 26/10 a sessão foi guiada com a ponte do brain (`_meta/scripts/ponte-sede/`): o Mac serve scripts curtos na rede local e a máquina roda `curl -sS <ip-do-mac>:8765/<nome> | bash`. Num `curl | bash`, o script chega pela entrada padrão.
 
 - Todo comando que lê a entrada padrão leva `</dev/null` dentro do script. Sem isso ele come o resto do script, e os comandos seguintes nunca rodam. Em 26/10 o `ausearch` fez o script do passo 13 sumir cinco vezes. Os scripts da ponte também põem `</dev/null` no `kwriteconfig6`, no `pkill` e no `curl` que devolve a saída.
-- Comando que pede senha ou resposta não vai pela ponte: `sudo novasce-primeiro-uso` (passo 11), `ujust setup-luks-tpm-unlock` (passo 12), `passwd` e o `watch` do passo 7. Esses se digitam na máquina.
+- Comando que pede senha ou resposta não vai pela ponte: `sudo novasce-primeiro-uso` (passo 11), `ujust toggle-tpm2` (passo 12), o `pkexec` do 8b, `passwd` e o `watch` do passo 7. Esses se digitam na máquina.
+- Reiniciar com a Sede aberta: `systemctl reboot -i`. Sem o `-i`, o `systemctl reboot` recusa, porque a sessão da Sede é de outra conta (27/10).
 - O `sudo` pede a senha no próprio terminal da máquina (ele lê o `/dev/tty`, não a entrada padrão). Nenhum script lê, guarda ou envia senha.
 - Na conta Sede não há terminal (passo 8). Os scripts rodam na conta `eduardo`.
 
@@ -146,7 +147,7 @@ O Preparar abre sozinho no login do `eduardo` (administrador). Se não abrir, pr
 | 7.3 Registro, com o M2 no ar | Aprovar o código de 6 letras em **Máquinas e telas** no Tenancy | A tela avança sozinha para o passo 4. `sudo ls -l /var/lib/novasce/maquina.json` mostra `-rw-------` e dono `root` |
 | 7.3b Código recusado (teste opcional) | Gerar um código e recusar no Tenancy | "O Tenancy recusou este código. Gere outro e peça a aprovação de novo." e o botão **Gerar outro código** (a API respondeu `403`) |
 | 7.3c Código vencido (teste opcional) | Gerar um código e esperar 10 minutos sem aprovar | "O código venceu ou já foi usado. Gere outro código." (a API respondeu `410`) |
-| 7.4 De quem é | Criar uma conta de teste ("Teste Sede", `teste@novasce.com`) e clicar **Concluir a sede** | "Contas criadas: teste." e a tela "Máquina pronta" |
+| 7.4 De quem é | Criar uma conta de teste ("Teste Sede", `teste@novasce.com`), digitar uma senha de teste duas vezes (8 caracteres ou mais) e clicar **Concluir a sede** | Com as duas senhas diferentes, "As duas senhas não batem." e o **Criar a conta** apagado. Com as duas iguais: "Contas criadas: teste." e a tela "Máquina pronta" |
 
 Conferência do Wi-Fi (só se o 7.2b foi feito). A senha não pode passar pela linha de comando, onde qualquer conta da máquina a leria. Em outro terminal, durante o clique em **Conectar**:
 
@@ -174,10 +175,15 @@ cat /etc/plasmalogin.conf.d/50-novasce-sede.conf
 systemctl status novasce-sinal.timer --no-pager
 sudo ls -l ~sede/.config/kwalletrc ~sede/.config/ksmserverrc \
   ~sede/.var/app/com.google.Chrome/config/chrome-flags.conf \
-  ~sede/.local/share/applications/org.kde.konsole.desktop
+  ~sede/.local/share/applications/org.kde.konsole.desktop \
+  ~sede/.local/share/applications/novasce-voltar-a-sede.desktop
+grep Exec /usr/local/share/applications/novasce-voltar-a-sede.desktop
+sudo chage -l teste | head -n 1
 ```
 
-**Esperado:** `sede`; `novasce-sede`; as duas contas; `teste` **sem** `wheel`; `[Autologin]` com `User=sede` e **sem** `Relogin`; o timer do sinal ativo; os quatro arquivos da Sede com dono `sede`.
+**Esperado:** `sede`; `novasce-sede`; as duas contas, a `sede` terminando em `/usr/sbin/nologin` (é o que a tira da lista da tela de login); `teste` **sem** `wheel`; `[Autologin]` com `User=sede` e **sem** `Relogin`; o timer do sinal ativo; os cinco arquivos da Sede com dono `sede`; `Exec=/usr/bin/novasce-voltar-a-sede`; a última troca de senha da `teste` com a data de hoje, nunca "password must be changed".
+
+A senha da conta pessoal vai do Preparar ao ajudante pela entrada padrão, nunca pela linha de comando. Para conferir, deixar `watch -n 0.2 'pgrep -af novasce-helper'` aberto em outro terminal durante o **Criar a conta**: nenhuma linha traz a senha.
 
 Quantas vezes a senha de administrador foi pedida no Preparar **[só na máquina]**: o esperado é uma vez a cada 5 minutos. Anotar se pediu mais.
 
@@ -194,38 +200,64 @@ Clicar **Reiniciar agora**.
 - A tela não apaga sozinha e a máquina não suspende.
 - Nenhuma janela da carteira do KDE por cima da Sala, nem no primeiro boot nem depois de reiniciar.
 - Sem terminal na Sede: no menu, buscar "Konsole" não acha nada, e o Ctrl+Alt+T não abre janela.
+- Sem "Voltar à Sede" na Sede: no menu, buscar "Voltar" não acha nada.
 
 Página de reserva, sem o Tenancy: tirar o adaptador Wi-Fi USB e reiniciar.
 
 **Esperado [só na máquina]:** o Chrome abre a página "A Sala chega com o Tenancy", com o cata-vento no alto. Nunca "Não foi possível acessar seu arquivo" (era o defeito de 26/10). Repor o adaptador: em até 1 minuto, a Sala abre sozinha no lugar da reserva.
 
+## 8b. Sede preparada antes desta versão
+
+Só numa sede que passou pelo Preparar antes da versão com o "Voltar à Sede" (a de 27/10 foi preparada na 2026.10.27.1). Uma sede nova já sai assim do passo 7. Na conta `eduardo`, no terminal da máquina (o KDE pede a senha de administrador):
+
+```bash
+pkexec /usr/libexec/novasce/novasce-helper preparar-sede
+getent passwd sede
+ls /usr/local/share/applications/
+systemctl reboot -i
+```
+
+**Esperado:** a linha `{"evento":"sede"}`; a `sede` terminando em `/usr/sbin/nologin`; `novasce-voltar-a-sede.desktop` na pasta; depois do boot, a Sede entra sozinha com a Sala, como no passo 8. Se a Sede **não** entrar sozinha (a tela de login fica parada), voltar o shell na conta `eduardo` com `sudo usermod -s /bin/bash sede` e reiniciar: a entrada automática não aceitou o nologin, e isso vai para o cartão.
+
+As contas pessoais criadas antes desta versão continuam com a senha que têm.
+
 ## 9. Conta pessoal sem sudo
 
-1. No menu da Sede, **Trocar usuário**: aparece a tela de login com as contas, e não a Sede de novo (em 26/10, com o `Relogin=true`, a tela ficava preta). Entrar como `teste`.
-2. Com a senha vazia, o login pede para criar a senha nova.
-3. Entrar, abrir o Konsole e rodar `sudo -v`.
-4. Ainda no Konsole: `xdg-settings get default-web-browser` e `xdg-mime query default x-scheme-handler/https`.
-5. Clicar num link qualquer (por exemplo, no "Sobre este sistema").
+1. No menu da Sede, **Trocar usuário**: aparece a tela de login com as contas pessoais, e não a Sede de novo (em 26/10, com o `Relogin=true`, a tela ficava preta). A **Sede não aparece na lista** (shell nologin). Entrar como `teste`, com a senha digitada no passo 7.4.
+2. Abrir o Konsole e rodar `sudo -v`.
+3. Ainda no Konsole: `xdg-settings get default-web-browser` e `xdg-mime query default x-scheme-handler/https`.
+4. Clicar num link qualquer (por exemplo, no "Sobre este sistema").
 
-**Esperado [só na máquina]:** o login pede a senha nova (a conta nasce com a senha vencida); o `sudo -v` responde que `teste` não está no sudoers; o avatar do login mostra a inicial "T" no círculo teal claro; os dois comandos respondem `com.google.Chrome.desktop` e o link abre no Chrome, não no Firefox.
-
-Se o login não pedir a senha nova (limite do plasmalogin), o Eduardo define com a pessoa ao lado: `sudo passwd teste`. Anotar para corrigir no M3.
+**Esperado [só na máquina]:** a `teste` entra de primeira com a senha do Preparar, sem pedir senha nova (em 27/10, a senha vazia vencida não entrava); o `sudo -v` responde que `teste` não está no sudoers; o avatar do login mostra a inicial "T" no círculo teal claro; os dois comandos respondem `com.google.Chrome.desktop` e o link abre no Chrome, não no Firefox.
 
 ## 10. Voltar à Sede
 
-Trocar usuário de volta para **Sede**.
+Escolher a Sede no Trocar usuário abria uma segunda sessão dela, que travava (27/10): a tela de login só reaproveita sessão aberta por ela mesma, e a da Sede é aberta pela entrada automática. Agora a Sede nem aparece na lista, e a volta é pelo menu da conta pessoal.
 
-**Esperado [só na máquina]:** volta com Enter, sem senha, e a Sala continua aberta.
+1. Na `teste`, abrir o menu e buscar **Voltar à Sede**. Clicar.
+2. Na conta `eduardo`: `loginctl list-sessions`.
+3. Voltar à `teste` pelo Trocar usuário (senha da `teste`), abrir o Konsole e rodar `/usr/bin/novasce-voltar-a-sede` duas vezes seguidas, com uns segundos entre elas.
+4. Conta pessoal que encerra a sessão com a Sede aberta por trás: entrar na `teste` pelo Trocar usuário, menu, **Encerrar sessão**, e não entrar em nada por 3 minutos.
+5. Na conta `eduardo`: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
+
+**Esperado [só na máquina]:**
+
+- 1: a `teste` tranca e a TV volta para a Sede já aberta, com a Sala como estava. Nenhuma tela travada, nenhum Chrome reabrindo.
+- 2: uma sessão só da `sede` no `seat0`. Duas quer dizer que a volta abriu outra Sede: anotar.
+- 3: a primeira volta para a Sede; a segunda nem roda (a `teste` está trancada por trás). Ao entrar de novo na `teste`, os apps continuam abertos.
+- 4: a tela de login fica uns 2 minutos e a Sede volta para a frente sozinha, sem reiniciar a tela de login (a Sala não recarrega).
+- 5: a linha "A TV ficou 2 minutos no login com a Sede aberta por trás. A Sede volta para a frente." uma vez para o item 4.
 
 ## 10b. A Sede volta sozinha
 
 Sem o `Relogin=true`, quem devolve a Sede é a guarda (`novasce-sede-guarda.service`).
 
-1. Na Sede, menu, **Sair**. Na tela de login, não entrar em nada por 2 minutos.
-2. Repetir com uma conta pessoal aberta por trás (passo 9, sem sair dela): na Sede, **Sair**, e esperar 3 minutos.
-3. Na conta `eduardo`: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
+1. Na Sede, abrir o menu (tecla Windows) e **Encerrar sessão**. Na tela de login, não entrar em nada por 2 minutos.
+2. Repetir com uma conta pessoal aberta por trás (passo 9, sem encerrar a sessão dela): na Sede, **Encerrar sessão**, e esperar 3 minutos.
+3. Na `teste`, com a Sede fechada (item 2), buscar **Voltar à Sede** no menu.
+4. Na conta `eduardo`: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
 
-**Esperado [só na máquina]:** no 1, depois de uns 2 minutos a tela de login reinicia e a Sede entra sozinha, com a Sala. No 2, nada acontece: a conta pessoal segura a guarda, e a Sede volta quando ela sair. No 3, a linha "A TV ficou 2 minutos só no login. A tela de login reinicia para a Sede entrar." uma vez para o item 1.
+**Esperado [só na máquina]:** no 1, depois de uns 2 minutos a tela de login reinicia e a Sede entra sozinha, com a Sala. No 2, nada acontece: a conta pessoal segura a guarda, e a Sede volta quando ela encerrar a sessão. No 3, o aviso "A Sede não está aberta. Encerre a sua sessão, e em uns 2 minutos a TV volta para a Sala.", e a `teste` não tranca. No 4, a linha "A TV ficou 2 minutos só no login. A tela de login reinicia para a Sede entrar." uma vez para o item 1.
 
 ## 11. Agentes
 
@@ -247,12 +279,15 @@ sudo flock -n /run/novasce-agentes/rodada.lock true && echo "fora de uma rodada"
 
 ## 12. Disco pelo TPM
 
+A receita do Aurora mudou de nome (27/10): é `ujust toggle-tpm2`, que roda o `/usr/bin/luks-tpm2-autounlock`. Escolher **Enable** e responder não ao PIN. A senha do disco é pedida uma vez.
+
 ```bash
-ujust setup-luks-tpm-unlock
-systemctl reboot
+ujust toggle-tpm2
+sudo cryptsetup luksDump /dev/nvme0n1p3 | grep -A2 Tokens
+systemctl reboot -i
 ```
 
-**Esperado:** o boot não pede mais a senha do disco e chega sozinho à Sala.
+**Esperado:** um token `systemd-tpm2` no `luksDump`; o boot não pede mais a senha do disco e chega sozinho à Sala.
 
 ## 13. Sinal
 
@@ -283,7 +318,7 @@ sudo novasce-sinal heartbeat
 
 ```bash
 sudo bootc rollback
-systemctl reboot
+systemctl reboot -i
 grep IMAGE_VERSION /usr/lib/os-release
 ```
 
@@ -302,6 +337,9 @@ grep IMAGE_VERSION /usr/lib/os-release
 |---|---|
 | Entrada automática da Sede (`[Autologin]`, `Session=plasma.desktop`, sem `Relogin`) e o Trocar usuário mostrando o login | o plasmalogin só roda com tela |
 | A guarda devolve a Sede depois de 2 minutos só no login, e a tela de login que reinicia entra na Sede de novo | depende do plasmalogin e do logind de verdade |
+| A Sede fora da lista da tela de login (shell nologin) e a entrada automática dela continuando a valer | o plasmalogin e o PAM só rodam com tela |
+| O "Voltar à Sede" no menu das contas pessoais (`/usr/local/share/applications`) e escondido na Sede | depende do menu do KDE e do `XDG_DATA_DIRS` da sessão |
+| A guarda ativa a Sede que ficou por trás quando uma conta pessoal encerra a sessão | depende do logind e do plasmalogin de verdade |
 | Nenhuma carteira do KDE na Sede (`--password-store=basic` e `kwalletrc`) | depende do Chrome e do KWallet na sessão |
 | A página de reserva abre no Chrome do Flatpak (cópia em `~/.var/app/com.google.Chrome/sala-reserva/`) | depende do sandbox do Flatpak |
 | Konsole e Executar comando fora da Sede (`shell_access=false` e o Konsole escondido) | depende do KDE aplicando a restrição |
@@ -313,7 +351,7 @@ grep IMAGE_VERSION /usr/lib/os-release
 | Ícones do dock agrupando as janelas do Chrome (`StartupWMClass`) | depende do Chrome em execução |
 | A janela do Preparar abre com a NVIDIA (`WEBKIT_DISABLE_DMABUF_RENDERER=1`) | precisa da placa |
 | Quantas vezes a senha de administrador é pedida no Preparar | depende do agente do polkit no KDE |
-| A conta nova pede a senha no primeiro login | depende do plasmalogin |
+| A conta nova entra com a senha digitada no Preparar | depende do plasmalogin e do PAM |
 | O avatar com a inicial aparece no login | depende do accounts-daemon |
 | Uma conta nova nasce clara com destaque teal | depende do Plasma aplicando o perfil |
 | O Chrome é o navegador padrão de uma conta nova (`BrowserApplication` e `mimeapps.list`) | depende da ordem do `XDG_CONFIG_DIRS` na sessão |
@@ -334,7 +372,7 @@ Piloto: o Eduardo, no computador da empresa. Cada passo diz o que fazer e o que 
 | 5 | Trazer o Studio | Pasta `~/Espaços/Studio` e "Pronto. Os três passos estão feitos." |
 | 6 | Conectar o Google no fim | Pasta "Novasce OS/Documentos" no Drive com o que estava em Documentos |
 | 7 | Fechar o Começar e entrar de novo | O Começar não abre; ele saiu do dock; volta pela Ajuda |
-| 8 | Sair e entrar na manhã seguinte | O Meu dia do Tenancy abre uma vez |
+| 8 | Encerrar sessão e entrar na manhã seguinte | O Meu dia do Tenancy abre uma vez |
 | 9 | Clicar no "?" com o Dolphin na frente | A Central com "Nesta tela · Arquivos" |
 | 10 | Pedir ajuda com print | "Chamado aberto" e o chamado no Tenancy com print INTERNAL e dados da máquina |
 | 11 | Responder o chamado no Tenancy com tipo Solução | Aviso "A Novasce respondeu" com Resolveu e Ainda não |
