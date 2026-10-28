@@ -48,6 +48,7 @@ export const GUIAS: Guia[] = [
       { titulo: "Usar a conta Sede", oQueFazer: "Saia da tela cheia da Sala.", ondeClicar: "No navegador que esquece, no dock.", oQueDeveAparecer: "Uma janela do Chrome sem nenhum login." },
       { titulo: "Voltar à Sala", oQueFazer: "Nada: com 10 minutos sem uso, ela volta sozinha.", ondeClicar: "Em Continuar usando, se você ainda estiver ali.", oQueDeveAparecer: "A Sala em tela cheia, e o navegador sem nada do que estava aberto." },
       { titulo: "Entrar na sua conta na sede", oQueFazer: "Troque de usuário.", ondeClicar: "Em Trocar usuário, e depois no seu nome.", oQueDeveAparecer: "A sua área de trabalho. Com 5 minutos sem uso, ela tranca e a TV volta à Sala." },
+      { titulo: "Devolver a TV à Sala", oQueFazer: "Na sua conta, volte para a Sede sem fechar nada.", ondeClicar: "Em Voltar à Sede, no menu.", oQueDeveAparecer: "A Sala na TV. A sua conta fica trancada por trás, com os apps abertos." },
       { titulo: "Reiniciar para atualizar", oQueFazer: "Reinicie quando ninguém estiver usando.", ondeClicar: "Em Reiniciar, no canto da Sala.", oQueDeveAparecer: "O botão só fica ativo com os agentes fora de uma rodada." },
     ],
   },

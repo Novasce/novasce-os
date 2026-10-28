@@ -18,7 +18,8 @@ export const api = {
   aoRegistrar: (ouvinte: (evento: EventoDoHelper) => void): Promise<UnlistenFn> =>
     listen<EventoDoHelper>("registro", (evento) => ouvinte(evento.payload)),
   listarTime: () => invoke<MembroDoTime[]>("listar_time"),
-  criarConta: (nome: string, email: string, dono: string | null) => invoke<string>("criar_conta", { nome, email, dono }),
+  criarConta: (nome: string, email: string, senha: string, dono: string | null) =>
+    invoke<string>("criar_conta", { nome, email, senha, dono }),
   prepararSede: () => invoke<void>("preparar_sede"),
   concluir: () => invoke<void>("concluir"),
   reiniciar: () => invoke<void>("reiniciar"),

@@ -5,12 +5,25 @@ import type { Acao, Papel } from "../estado";
 
 type Props = { papel: Papel; registrado: boolean; contas: string[]; despachar: (acao: Acao) => void };
 
+export const SENHA_MINIMA = 8;
+
+/** A senha da pessoa e a repetição: pronta quando tem o mínimo e as duas batem. */
+export function lerSenha(senha: string, repetida: string): { pronta: boolean; aviso: string } {
+  const naoBatem = repetida !== "" && repetida !== senha;
+  return {
+    pronta: senha.length >= SENHA_MINIMA && senha === repetida,
+    aviso: naoBatem ? "As duas senhas não batem." : "",
+  };
+}
+
 export function PassoDono({ papel, registrado, contas, despachar }: Props) {
   const [time, setTime] = useState<MembroDoTime[] | null>(registrado ? null : []);
   const [avisoDoTime, setAvisoDoTime] = useState("");
   const [escolhido, setEscolhido] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [repetida, setRepetida] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -29,7 +42,9 @@ export function PassoDono({ papel, registrado, contas, despachar }: Props) {
   const lista = time ?? [];
   const pelaLista = registrado && lista.length > 0;
   const pessoa = pelaLista ? (lista.find((p) => p.id === escolhido) ?? null) : null;
-  const pronto = carregando ? false : pelaLista ? pessoa !== null : nome.trim() !== "" && email.includes("@");
+  const leituraDaSenha = lerSenha(senha, repetida);
+  const pessoaPronta = carregando ? false : pelaLista ? pessoa !== null : nome.trim() !== "" && email.includes("@");
+  const pronto = pessoaPronta && leituraDaSenha.pronta;
 
   async function criar() {
     const alvo = pessoa
@@ -38,10 +53,12 @@ export function PassoDono({ papel, registrado, contas, despachar }: Props) {
     setOcupado(true);
     setErro("");
     try {
-      const login = await api.criarConta(alvo.nome, alvo.email, alvo.dono);
+      const login = await api.criarConta(alvo.nome, alvo.email, senha, alvo.dono);
       setEscolhido(null);
       setNome("");
       setEmail("");
+      setSenha("");
+      setRepetida("");
       despachar({ tipo: "conta-criada", login });
     } catch (e) {
       setErro(String(e));
@@ -65,8 +82,8 @@ export function PassoDono({ papel, registrado, contas, despachar }: Props) {
 
   const titulo = papel === "sede" ? "Contas pessoais da sede" : "De quem é este notebook?";
   const explicacao = pelaLista
-    ? "Escolha a pessoa na lista do time do Tenancy. A conta nasce com o nome dela, e ela cria a própria senha no primeiro login."
-    : "Digite o nome e o e-mail da Novasce da pessoa. Ela cria a própria senha no primeiro login.";
+    ? "Escolha a pessoa na lista do time do Tenancy e peça para ela digitar a senha dela. A conta nasce com o nome dela e já entra com essa senha."
+    : "Digite o nome e o e-mail da Novasce da pessoa e peça para ela digitar a senha dela. A conta já entra com essa senha.";
 
   return (
     <section className="passo">
@@ -103,6 +120,25 @@ export function PassoDono({ papel, registrado, contas, despachar }: Props) {
           <Campo rotulo="E-mail da Novasce" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
         </div>
       )}
+      <div className="campos">
+        <Campo
+          rotulo="Senha da pessoa"
+          type="password"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          autoComplete="new-password"
+          mensagem={`Pelo menos ${SENHA_MINIMA} caracteres. Só a pessoa sabe.`}
+        />
+        <Campo
+          rotulo="Repita a senha"
+          type="password"
+          value={repetida}
+          onChange={(e) => setRepetida(e.target.value)}
+          autoComplete="new-password"
+          mensagem={leituraDaSenha.aviso}
+          erro={leituraDaSenha.aviso !== ""}
+        />
+      </div>
       {papel === "sede" && (
         <p className="texto texto--apagado">
           {contas.length === 0 ? "Nenhuma conta pessoal criada ainda." : `Contas criadas: ${contas.join(", ")}.`}

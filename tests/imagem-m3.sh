@@ -8,7 +8,7 @@ confere() {
   if bash -c "$2" >/dev/null 2>&1; then echo "ok    $1"; else echo "FALHA $1"; falhou=1; fi
 }
 
-for b in novasce-comecar novasce-ajuda novasce-voz novasce-sede novasce-sincronizar novasce-barra novasce-tranca novasce-navegador-sede novasce-voz-medir claude codex gemini; do
+for b in novasce-comecar novasce-ajuda novasce-voz novasce-sede novasce-sincronizar novasce-barra novasce-tranca novasce-voltar-a-sede novasce-navegador-sede novasce-voz-medir claude codex gemini; do
   confere "bin $b" "test -x /usr/bin/$b"
 done
 for b in novasce-sinal-local novasce-login-qr git-credencial whisper-cli cli-primeiro-uso novasce-sede-guarda; do

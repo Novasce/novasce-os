@@ -71,7 +71,7 @@ conferir "URL da Sala vem da config" test "$(/usr/bin/novasce-sinal url sala)" =
 conferir "novasce-helper roda" /usr/libexec/novasce/novasce-helper --help
 conferir "Preparar instalado" test -x /usr/bin/novasce-preparar
 conferir "Preparar acha todas as bibliotecas" sh -c '! ldd /usr/bin/novasce-preparar | grep -q "not found"'
-for f in /usr/share/applications/novasce-*.desktop /etc/xdg/autostart/novasce-*.desktop; do
+for f in /usr/share/applications/novasce-*.desktop /etc/xdg/autostart/novasce-*.desktop /usr/share/novasce/sede/novasce-voltar-a-sede.desktop; do
   conferir "atalho válido: ${f##*/}" desktop-file-validate "$f"
 done
 # PNG de 256 px: a largura mora nos bytes 16 a 19 do arquivo (00 00 01 00).
@@ -94,7 +94,7 @@ done
 echo "== Papéis, contas e agentes"
 conferir "política do ajudante" xmllint --noout /usr/share/polkit-1/actions/com.novasce.helper.policy
 conferir "ajudante só para wheel" grep -q 'isInGroup("wheel")' /usr/share/polkit-1/rules.d/50-novasce-helper.rules
-for f in novasce-agentes.sysusers novasce-agentes.tmpfiles 50-novasce-sede-sem-suspender.conf 50-novasce-sede-autologin.conf kscreenlockerrc powerdevilrc kwalletrc ksmserverrc chrome-flags.conf org.kde.konsole.desktop; do
+for f in novasce-agentes.sysusers novasce-agentes.tmpfiles 50-novasce-sede-sem-suspender.conf 50-novasce-sede-autologin.conf kscreenlockerrc powerdevilrc kwalletrc ksmserverrc chrome-flags.conf org.kde.konsole.desktop novasce-voltar-a-sede.desktop novasce-voltar-a-sede-na-sede.desktop; do
   conferir "arquivo da sede: $f" test -s "/usr/share/novasce/sede/$f"
 done
 conferir "agentes não nascem em todo notebook" test ! -e /usr/lib/sysusers.d/novasce-agentes.conf
@@ -109,6 +109,11 @@ conferir "Chrome da conta Sede sem a carteira do KDE" grep -qx -- '--password-st
 conferir "carteira do KDE desligada na Sede" grep -qx 'Enabled=false' /usr/share/novasce/sede/kwalletrc
 conferir "Sede abre sempre vazia" grep -qx 'loginMode=emptySession' /usr/share/novasce/sede/ksmserverrc
 conferir "Konsole escondido na Sede" grep -qx 'Hidden=true' /usr/share/novasce/sede/org.kde.konsole.desktop
+conferir "Voltar à Sede chama o binário da volta" grep -qx 'Exec=/usr/bin/novasce-voltar-a-sede' /usr/share/novasce/sede/novasce-voltar-a-sede.desktop
+conferir "Voltar à Sede escondido na própria Sede" grep -qx 'Hidden=true' /usr/share/novasce/sede/novasce-voltar-a-sede-na-sede.desktop
+conferir "Voltar à Sede não vem no menu de todo notebook" test ! -e /usr/share/applications/novasce-voltar-a-sede.desktop
+conferir "nologin existe para a Sede sair da lista de login" test -x /usr/sbin/nologin
+conferir "receita do TPM com o nome de agora" sh -c "grep -q 'ujust toggle-tpm2' /usr/bin/novasce-primeiro-uso && ! grep -q setup-luks-tpm-unlock /usr/bin/novasce-primeiro-uso"
 conferir "Sala em perfil que persiste, sem modo anônimo" sh -c "grep -q 'user-data-dir' /usr/libexec/novasce/sala && ! grep -q incognito /usr/libexec/novasce/sala"
 conferir "o sistema não guarda token de tela" sh -c "! grep -rqs 'tela.json' /usr/libexec/novasce /usr/share/novasce /etc/xdg/autostart"
 conferir "nenhuma máquina registrada na imagem" test ! -e /var/lib/novasce/maquina.json

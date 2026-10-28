@@ -19,7 +19,7 @@ export function PassoPronto({ papel, registrado }: { papel: Papel; registrado: b
       <p className="texto">
         {papel === "sede"
           ? "Reinicie. A sede entra sozinha na conta Sede e abre a Sala em tela cheia."
-          : "Reinicie para a pessoa entrar. Ela cria a própria senha no primeiro login."}
+          : "Reinicie para a pessoa entrar, com a senha que ela digitou."}
       </p>
       {!registrado && (
         <p className="texto texto--apagado">

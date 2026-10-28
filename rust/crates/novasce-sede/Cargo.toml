@@ -24,3 +24,7 @@ path = "src/bin/navegador_sede.rs"
 [[bin]]
 name = "novasce-sede-guarda"
 path = "src/bin/guarda.rs"
+
+[[bin]]
+name = "novasce-voltar-a-sede"
+path = "src/bin/voltar_a_sede.rs"

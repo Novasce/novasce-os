@@ -1,0 +1,5 @@
+# Na própria conta Sede, o "Voltar à Sede" não aparece (mesmo nome do arquivo, Hidden=true).
+[Desktop Entry]
+Type=Application
+Name=Voltar à Sede
+Hidden=true
