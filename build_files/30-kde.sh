@@ -24,6 +24,9 @@ GRUPOS=(Colors:Button Colors:View Colors:Window Colors:Selection Colors:Tooltip 
 # Novasce Claro: o Breeze claro com o teal da casa no lugar do azul.
 C="$CORES/NovasceClaro.colors"
 cp "$CORES/BreezeLight.colors" "$C"
+# A cópia traz o nome traduzido do Breeze (Name[pt_BR] e os outros): em português, o
+# Novasce Claro aparecia como um segundo "Breeze claro" na tela de Cores (sede, 27/10).
+sed -i '/^Name\[/d' "$C"
 cor "$C" General Name "Novasce Claro"
 cor "$C" General ColorScheme NovasceClaro
 for g in "${GRUPOS[@]}"; do
@@ -39,6 +42,7 @@ cor "$C" Colors:Window ForegroundLink "0,102,108"
 # Novasce Grafite (D Grafite): fundo #1E1E20 e destaque ciano #00C4CC.
 G="$CORES/NovasceGrafite.colors"
 cp "$CORES/BreezeDark.colors" "$G"
+sed -i '/^Name\[/d' "$G"
 cor "$G" General Name "Novasce Grafite"
 cor "$G" General ColorScheme NovasceGrafite
 for g in Colors:Window Colors:Header Colors:Complementary; do
