@@ -139,8 +139,11 @@ gerar_iso() {
     "$ref"
   echo "== ISO $variante pronto ($(date +%T))"
 
-  local iso="$SAIDA/novasce-os-${versao}-${variante}.iso"
-  mv "$pasta/saida/bootiso/install.iso" "$iso"
+  local feito
+  feito=$(find "$pasta/saida" -name '*.iso' -type f | head -n 1)
+  [ -n "$feito" ] || { echo "O builder terminou sem ISO em $pasta/saida." >&2; exit 1; }
+  local iso="$SAIDA/novasce-os-${versao:-sem-versao}-${variante}.iso"
+  mv "$feito" "$iso"
   (cd "$SAIDA" && sha256sum "$(basename "$iso")" >"$(basename "$iso").sha256")
   {
     echo "variante=$variante"
@@ -171,15 +174,15 @@ main() {
   lista=$(variantes "${1:-as-duas}")
   conferir_maquina
 
-  local trabalho
-  trabalho=$(mktemp -d "$SAIDA/trabalho-XXXXXX")
-  trap 'rm -rf "$trabalho"' EXIT
-  escrever_politica "$trabalho"
-  baixar "$BIB" "$trabalho/politica.json"
+  # Global, não local: o trap roda depois que o main retorna.
+  TRABALHO=$(mktemp -d "$SAIDA/trabalho-XXXXXX")
+  trap 'rm -rf "$TRABALHO"' EXIT
+  escrever_politica "$TRABALHO"
+  baixar "$BIB" "$TRABALHO/politica.json"
 
   local v
   for v in $lista; do
-    gerar_iso "$v" "$trabalho"
+    gerar_iso "$v" "$TRABALHO"
   done
   echo
   echo "Pronto. Os instaladores estão em $SAIDA:"
