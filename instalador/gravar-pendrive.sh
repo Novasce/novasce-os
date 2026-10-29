@@ -28,8 +28,10 @@ escolher_iso() {
   done
   local n
   n=$(perguntar "Qual ISO gravar (número): ")
-  [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -ge 1 ] && [ "$n" -le "${#isos[@]}" ] \
-    || { echo "Número fora da lista: '$n'." >&2; return 1; }
+  if ! [[ "$n" =~ ^[0-9]+$ ]] || [ "$n" -lt 1 ] || [ "$n" -gt "${#isos[@]}" ]; then
+    echo "Número fora da lista: '$n'." >&2
+    return 1
+  fi
   printf '%s' "${isos[$((n - 1))]}"
 }
 

@@ -121,3 +121,18 @@ for RESPOSTA in "apagar sdb" "APAGAR sdc" "sim" ""; do
   if confirmar sdb 2>/dev/null; then falha "aceitou a frase '$RESPOSTA'"; fi
 done
 ok "recusa frase diferente, outro aparelho e sim"
+
+mkdir -p "$TMP/isos"
+: >"$TMP/isos/novasce-os-2026.10.29.1-nvidia.iso"
+: >"$TMP/isos/novasce-os-2026.10.29.1-padrao.iso"
+SAIDA="$TMP/isos"
+RESPOSTA=2
+[ "$(escolher_iso 2>/dev/null)" = "$TMP/isos/novasce-os-2026.10.29.1-padrao.iso" ] || falha "o número 2 não escolheu o padrão"
+ok "escolhe o ISO pelo número da lista"
+for RESPOSTA in 0 3 x ""; do
+  if escolher_iso >/dev/null 2>&1; then falha "aceitou o número '$RESPOSTA'"; fi
+done
+ok "recusa número fora da lista"
+SAIDA="$TMP/vazia"
+if escolher_iso >/dev/null 2>&1; then falha "escolheu sem ISO"; fi
+ok "sem ISO, pede para gerar antes"
