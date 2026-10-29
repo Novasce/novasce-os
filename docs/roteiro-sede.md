@@ -2,13 +2,14 @@
 
 ## TLDR
 
-- O que se prova: a sede instala pelo pendrive, troca para a imagem assinada da Novasce, mostra a marca no boot e no login, passa pelo Preparar esta máquina, entra sozinha na conta Sede com a Sala e atualiza e volta de versão.
+- O que se prova: a sede gera o instalador da casa, a máquina instala por ele já na imagem assinada da Novasce, mostra a marca no boot e no login, passa pelo Preparar esta máquina, entra sozinha na conta Sede com a Sala e atualiza e volta de versão.
 - Quem faz: o Eduardo, sentado na máquina da sede (RTX 2060).
 - Quanto tempo: umas 2 horas, com a instalação.
 - Marcado com **[só na máquina]**: o que o CI não consegue provar e só se confirma olhando a tela.
-- Sem a imagem publicada: os itens 0.5 e 0.6, o passo 0 (se a máquina já tem sistema), os passos 1 a 3 e o 3b, que confere a Sala no navegador.
+- Sem a imagem publicada não há instalador da casa: só o item 0.6, o passo 0 (se a máquina já tem sistema), o 1 e o plano B até o B3b, que confere a Sala no navegador.
 - **Disco cifrado é obrigatório.** Em 26/10 a sede foi instalada sem a cifra, e cifrar depois quer dizer reinstalar. Sem o disco cifrado, parar no passo 2.
 - Guiado pelo Mac: ver [Pela ponte](#pela-ponte-guiado-pelo-mac) antes de mandar o primeiro script.
+- **Instalador da casa (desde 29/10):** a sede gera o pendrive que já instala o Novasce OS ([G](#g-gerar-o-instalador-na-sede)). Os passos 2 a 4 usam esse pendrive, sem terminal. O caminho antigo (Aurora e `bootc switch`) ficou como [plano B](#plano-b-pendrive-do-aurora-e-a-troca-pelo-terminal).
 
 ## Pela ponte (guiado pelo Mac)
 
@@ -16,6 +17,7 @@ Em 26/10 a sessão foi guiada com a ponte do brain (`_meta/scripts/ponte-sede/`)
 
 - Todo comando que lê a entrada padrão leva `</dev/null` dentro do script. Sem isso ele come o resto do script, e os comandos seguintes nunca rodam. Em 26/10 o `ausearch` fez o script do passo 13 sumir cinco vezes. Os scripts da ponte também põem `</dev/null` no `kwriteconfig6`, no `pkill` e no `curl` que devolve a saída.
 - Comando que pede senha ou resposta não vai pela ponte: `sudo novasce-primeiro-uso` (passo 11), `ujust toggle-tpm2` (passo 12), o `pkexec` do 8b, `passwd` e o `watch` do passo 7. Esses se digitam na máquina.
+- O gravador do pendrive pergunta o aparelho e a frase de confirmação: roda no Konsole com `bash <(curl -sS <ip-do-mac>:8765/pendrive)`, nunca num `curl | bash`.
 - Reiniciar com a Sede aberta: `systemctl reboot -i`. Sem o `-i`, o `systemctl reboot` recusa, porque a sessão da Sede é de outra conta (27/10).
 - O `sudo` pede a senha no próprio terminal da máquina (ele lê o `/dev/tty`, não a entrada padrão). Nenhum script lê, guarda ou envia senha.
 - Na conta Sede não há terminal (passo 8). Os scripts rodam na conta `eduardo`.
@@ -28,8 +30,35 @@ Em 26/10 a sessão foi guiada com a ponte do brain (`_meta/scripts/ponte-sede/`)
 | 0.2 | As duas imagens publicadas e assinadas | `cosign verify --key cosign.pub ghcr.io/novasce/novasce-os:stable-nvidia` | `Verification for ghcr.io/novasce/novasce-os:stable-nvidia` sem erro |
 | 0.3 | O pacote do GHCR está público | github.com/orgs/Novasce/packages/container/novasce-os/settings, "Change visibility" | `Public`. Sem isso, a máquina não baixa a imagem |
 | 0.4 | A versão publicada | `skopeo inspect docker://ghcr.io/novasce/novasce-os:stable-nvidia \| jq -r '.Labels["org.opencontainers.image.version"]'` | `AAAA.MM.DD.N` |
-| 0.5 | Pendrive de **16 GB ou mais** com o ISO `aurora-nvidia-open-stable-x86_64.iso` (M0, item 6). O ISO tem 7,9 GB e não cabe num de 8 GB | getaurora.dev: Aurora, placa NVIDIA, sem DX. É o mesmo `aurora-nvidia-open` de que a imagem da casa parte. Conferir com `shasum -a 256` contra o arquivo `-CHECKSUM` ao lado do ISO e gravar no Fedora Media Writer (ou `dd` no `/dev/rdiskN` do pendrive, no Mac) | o checksum bate e o pendrive aparece como "Aurora" |
+| 0.5 | O Kingston de 62 GB na mochila. Na sede ele vira o instalador da casa ([G](#g-gerar-o-instalador-na-sede)), e o Aurora sai dele | o ISO do Aurora continua no Mac, em `~/Downloads/aurora-iso/`, para o [plano B](#plano-b-pendrive-do-aurora-e-a-troca-pelo-terminal) | `shasum -a 256 -c aurora-nvidia-open-stable-x86_64.iso-CHECKSUM` responde `OK` nessa pasta |
 | 0.6 | Senha forte para o disco, com **6 caracteres ou mais** (o instalador recusa menos), e senha de administrador do BIOS (passo 1) | no gerenciador de senhas, nunca no brain | as duas anotadas |
+
+## G. Gerar o instalador na sede
+
+Na sede, na conta `eduardo`, com a versão nova já publicada (item 0.4). A sede baixa as duas imagens assinadas do GHCR e monta um ISO de cada uma com o bootc-image-builder (tipo `anaconda-iso`). Precisa de 45 GB livres e leva uns 40 a 80 minutos para os dois. Nada reinicia.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/Novasce/novasce-os/main/instalador/gerar.sh
+sudo bash gerar.sh            # os dois; só um: sudo bash gerar.sh padrao
+ls -lh /var/lib/novasce-instalador/
+```
+
+Pela ponte: `curl -sS <ip-do-mac>:8765/inst | bash` faz o mesmo e manda o andamento ao Mac a cada 5 minutos.
+
+**Esperado:** `novasce-os-AAAA.MM.DD.N-nvidia.iso` e `-padrao.iso`, cada um com o `.sha256` e um `.txt` com a versão, o digest e o builder. A versão é a do item 0.4. Se o `podman pull` da imagem da casa recusar a assinatura, parar: o ISO só sai de imagem assinada com a chave da casa.
+
+**Gravar o pendrive.** Gravar apaga tudo o que está no Kingston, inclusive o Aurora.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/Novasce/novasce-os/main/instalador/gravar-pendrive.sh
+sudo bash gravar-pendrive.sh
+```
+
+1. Escolher o ISO pelo número: NVIDIA para a sede e máquinas com placa NVIDIA; padrão para os notebooks.
+2. Na tabela do `lsblk`, achar o Kingston: `TRAN` usb, `RM` 1, uns 57,7G (62 GB contados em GiB).
+3. Digitar o nome da coluna NAME (por exemplo `sdb`) e depois `APAGAR sdb`.
+
+**Esperado:** "Gravação conferida: o pendrive bate com o ISO". O script recusa o disco do sistema, o que não está no USB, partição no lugar do aparelho e frase diferente, e não grava nada nesses casos.
 
 ## 0. Antes de apagar o sistema que já está lá
 
@@ -52,16 +81,76 @@ Só se a máquina já tem um sistema. Em 10/2026 a sede ainda tem o Fedora antig
 
 **Esperado:** a tela de segurança mostra TPM 2.0 ligado e Secure Boot "Enabled".
 
-## 2. Instalar o Aurora NVIDIA
+## 2. Instalar pelo pendrive da Novasce
+
+1. Dar boot pelo pendrive (ordem do BIOS do passo 1, ou o menu de boot do F8/F12) e escolher a primeira linha do menu, a de instalar.
+2. Se o instalador pedir idioma, Português (Brasil).
+3. **Destino da instalação:** marcar só o disco principal. Se a máquina tiver um segundo disco (o do Windows, em 10/2026 um SSD à parte para jogos), deixar desmarcado. Configuração automática.
+4. Marcar **Criptografar meus dados**, **Concluído** e digitar a senha do item 0.6 duas vezes. **Obrigatório:** sem a cifra, não seguir. Cifrar depois quer dizer reinstalar, o passo 11 (agentes) só roda com o disco cifrado e o 12 (TPM) não existe sem ele.
+5. Se o disco já tem sistema, o instalador avisa que falta espaço: **Recuperar espaço**, **Excluir tudo**, **Recuperar espaço**. É a única tela que apaga o disco, e só com esses cliques.
+6. **Iniciar a instalação.** Não há tela de usuário nem de senha de root: a conta nasce no primeiro boot (passo 3).
+
+**Esperado:** a instalação termina e mostra **Reiniciar o sistema**. Nenhum disco foi apagado antes do clique do item 5.
+
+**[só na máquina]:** anotar o texto da linha do menu de boot, quais telas o instalador mostrou no resumo e se alguma pediu algo além do disco e da cifra.
+
+Por que nada apaga sozinho: sem um kickstart próprio, o `anaconda-iso` do bootc-image-builder monta um kickstart automático com `clearpart --all` e `autopart`, que apaga todos os discos sem perguntar e sem cifra (conferido no código do `osbuild/images`, 29/10). O instalador da casa sempre leva o kickstart dele, que não tem nenhuma linha de disco: a escolha e a cifra ficam na tela. O teste `tests/instalador.test.sh` recusa o kickstart que tiver `clearpart`, `autopart`, `part`, `zerombr` ou `ignoredisk`.
+
+## 3. Primeiro boot: MOK, senha do disco e a conta
+
+1. Tirar o pendrive e reiniciar.
+2. Na tela azul do MOK: **Enroll MOK**, **Continue**, senha `universalblue`, **Reboot**. É igual ao Aurora: o instalador da casa importa a mesma chave da Universal Blue, do mesmo jeito. Numa máquina que já tinha a chave (a sede, desde 26/10), a tela azul pode não aparecer.
+3. Digitar a senha do disco, já na tela teal da Novasce.
+4. O **Plasma Setup** abre antes do login, como no Aurora: idioma, teclado, fuso, rede (o Wi-Fi entra aqui, se não houver cabo) e a conta `eduardo` como **administrador**.
+5. Entrar como `eduardo`. Num terminal: `mokutil --sb-state` e `nvidia-smi` (só no NVIDIA).
+
+**Esperado:** `SecureBoot enabled`; `nvidia-smi` mostra a GeForce RTX 2060. A conta nova já nasce na imagem da Novasce, com o dock e o papel de parede da casa (o defeito 5 de 27/10 não acontece).
+
+Se não houve tela azul e o `nvidia-smi` não acha a placa: `sudo mokutil --import /etc/pki/akmods/certs/akmods-ublue.der` (senha `universalblue` duas vezes), `systemctl reboot` e fazer o **Enroll MOK**.
+
+## 4. Conferir a origem e a assinatura
+
+Não há troca de imagem: a máquina já nasceu no Novasce OS.
+
+```bash
+rpm-ostree status | head -n 5
+sudo bootc upgrade --check
+grep IMAGE_VERSION /usr/lib/os-release
+```
+
+**Esperado:** `ostree-image-signed:docker://ghcr.io/novasce/novasce-os:stable-nvidia` (ou `stable-padrao`), já no primeiro boot; o `upgrade --check` sem erro de assinatura; `IMAGE_VERSION` igual à do `.txt` ao lado do ISO.
+
+Como a assinatura vale já na primeira atualização: o ISO leva uma cópia da imagem, e o próprio builder deixa a origem como `ostree-unverified-registry`. O `%post` da casa roda depois dele e troca para `bootc switch --mutate-in-place --enforce-container-sigpolicy --transport registry ghcr.io/novasce/novasce-os:stable-<variante>`, o mesmo que o ISO do Aurora faz com a imagem deles. A política da imagem exige a chave da casa (`/usr/lib/pki/containers/novasce-os.pub`) para esse endereço.
+
+## Plano B: pendrive do Aurora e a troca pelo terminal
+
+Se o ISO não gerar, não der boot ou travar na instalação. É o caminho de 26 e 27/10, que pede o terminal no B4.
+
+**Regravar o Aurora no Kingston, pelo Mac:**
+
+```bash
+cd ~/Downloads/aurora-iso
+shasum -a 256 -c aurora-nvidia-open-stable-x86_64.iso-CHECKSUM
+diskutil list external physical
+diskutil unmountDisk /dev/diskN
+sudo dd if=aurora-nvidia-open-stable-x86_64.iso of=/dev/rdiskN bs=4m status=progress
+diskutil eject /dev/diskN
+```
+
+O `diskN` é o Kingston: conferir o tamanho (uns 62 GB) e o nome na saída do `diskutil list` antes do `dd`. O `dd` apaga o que estiver no aparelho. Na sede, o Fedora Media Writer faz o mesmo pela tela.
+
+Depois, B2 a B4 e seguir do passo 5.
+
+### B2. Instalar o Aurora NVIDIA
 
 1. Dar boot pelo pendrive e escolher instalar.
 2. Usar o disco inteiro e apagar tudo. Se a máquina tiver um segundo disco (o do Windows, em 10/2026 um SSD à parte para jogos), escolher só o principal e deixar o outro desmarcado.
 3. Marcar **Criptografar meus dados** e usar a senha do item 0.6. **Obrigatório:** sem a cifra, não seguir. Cifrar depois quer dizer reinstalar a máquina, o passo 11 (agentes) só roda com o disco cifrado e o 12 (TPM) não existe sem ele.
 4. Criar o usuário `eduardo` como **administrador**.
 
-**Esperado:** a instalação termina e pede para reiniciar. No passo 3, o boot pede a senha do disco: é a prova de que a cifra entrou.
+**Esperado:** a instalação termina e pede para reiniciar. No B3, o boot pede a senha do disco: é a prova de que a cifra entrou.
 
-## 3. Primeiro boot e a chave da Universal Blue (MOK)
+### B3. Primeiro boot e a chave da Universal Blue (MOK)
 
 1. Tirar o pendrive e reiniciar.
 2. Na tela azul do MOK: **Enroll MOK**, **Continue**, senha `universalblue`, **Reboot**.
@@ -70,9 +159,9 @@ Só se a máquina já tem um sistema. Em 10/2026 a sede ainda tem o Fedora antig
 
 **Esperado:** boot com a marca do Aurora; `SecureBoot enabled`; `nvidia-smi` mostra a GeForce RTX 2060.
 
-## 3b. Sem a imagem: a Sala no navegador
+### B3b. Sem a imagem: a Sala no navegador
 
-Só enquanto a imagem da Novasce não está publicada. Com a imagem, pular para o passo 4: a Sala abre sozinha no passo 8. Precisa do M2 no ar (desde 25/10) e do celular com o Tenancy.
+Só enquanto a imagem da Novasce não está publicada. Com a imagem, pular para o B4: a Sala abre sozinha no passo 8. Precisa do M2 no ar (desde 25/10) e do celular com o Tenancy.
 
 Antes, ligar o Wi-Fi pelo ícone de rede da bandeja. Se o adaptador não aparecer, usar a internet do celular pelo cabo USB (ancoragem).
 
@@ -94,7 +183,7 @@ Antes, ligar o Wi-Fi pelo ícone de rede da bandeja. Se o adaptador não aparece
 
 Se a TV ficar na Sala até a imagem chegar, pular o passo 6 e, nas Configurações do Sistema da conta `eduardo`, desligar o apagar da tela, a suspensão e o bloqueio automático. Quando a imagem chegar, revogar esta tela: a conta Sede pareia a dela no passo 8.
 
-## 4. Trocar para a imagem da Novasce
+### B4. Trocar para a imagem da Novasce
 
 ```bash
 sudo bootc switch --enforce-container-sigpolicy ghcr.io/novasce/novasce-os:stable-nvidia
@@ -103,11 +192,13 @@ sudo bootc status
 
 **Esperado:** o download termina com `Queued for next boot`; `bootc status` mostra `ghcr.io/novasce/novasce-os:stable-nvidia` em **staged**.
 
-O nome da máquina não se troca aqui. O assistente do Aurora grava o nome do usuário (em 26/10, "eduardo"), e o Preparar grava `novasce-sede` no passo 7.1, antes do registro.
+O nome da máquina não se troca aqui. O assistente do primeiro boot (Plasma Setup) grava um nome (em 26/10, "eduardo"), e o Preparar grava `novasce-sede` no passo 7.1, antes do registro.
 
 Por que passa já na primeira vez: o `--enforce-container-sigpolicy` exige que a política da máquina recuse por padrão o que não tem regra, e a do Aurora recusa. Esta primeira troca confia no TLS do GHCR, porque o Aurora ainda não conhece a chave da Novasce. A partir do próximo boot, a política da própria imagem confere a chave da casa em toda atualização (passo 6).
 
 ## 5. Reiniciar e ver a marca
+
+Com o instalador da casa, a marca já aparece desde o passo 3: conferir a lista abaixo reiniciando uma vez. No plano B, este é o primeiro boot depois do B4.
 
 ```bash
 systemctl reboot
@@ -120,7 +211,7 @@ systemctl reboot
 - Tela de login: o papel de parede teal com o cata-vento gigante tom sobre tom.
 - Depois do login, a abertura: teal, cata-vento parado e a linha que anda até o fim.
 - Área de trabalho B: barra fina no alto (cata-vento no menu, menu do app, bandeja e relógio) e dock flutuante embaixo com os apps.
-- Papel de parede: o teal da Novasce na área de trabalho, não o do Aurora nem o padrão do KDE. A conta `eduardo` nasceu no Aurora, antes da troca: ela também tem que mostrar o da Novasce. Se não mostrar, anotar e conferir `grep novasce-papel ~/.config/plasmashellrc` (o Plasma anota ali os scripts de atualização que já rodou).
+- Papel de parede: o teal da Novasce na área de trabalho, não o do Aurora nem o padrão do KDE. No plano B, a conta `eduardo` nasceu no Aurora, antes da troca: ela também tem que mostrar o da Novasce. Se não mostrar, anotar e conferir `grep novasce-papel ~/.config/plasmashellrc` (o Plasma anota ali os scripts de atualização que já rodou).
 - Ícones do dock: o Tenancy com o cata-vento branco no degradê teal; Claude, ChatGPT, Gemini e WhatsApp com a marca de cada um num quadrado branco; o Material da casa com a pasta de documentos do KDE. Nenhum quadrado colorido com uma letra.
 
 ## 6. Conferir a assinatura
@@ -335,6 +426,9 @@ grep IMAGE_VERSION /usr/lib/os-release
 
 | Item | Por que o CI não prova |
 |---|---|
+| O instalador da casa só apaga o disco depois do Recuperar espaço, e a cifra aparece no Destino da instalação | o Anaconda só roda com tela; o CI confere só o kickstart |
+| A tela azul do MOK depois do instalador da casa e a conta nascendo no Plasma Setup | precisa do Secure Boot e do primeiro boot de verdade |
+| A origem `ostree-image-signed` já no primeiro boot pelo instalador da casa | só existe numa máquina instalada |
 | Entrada automática da Sede (`[Autologin]`, `Session=plasma.desktop`, sem `Relogin`) e o Trocar usuário mostrando o login | o plasmalogin só roda com tela |
 | A guarda devolve a Sede depois de 2 minutos só no login, e a tela de login que reinicia entra na Sede de novo | depende do plasmalogin e do logind de verdade |
 | A Sede fora da lista da tela de login (shell nologin) e a entrada automática dela continuando a valer | o plasmalogin e o PAM só rodam com tela |

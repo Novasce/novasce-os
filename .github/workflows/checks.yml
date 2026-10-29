@@ -19,10 +19,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: shellcheck
         run: |
-          shellcheck build_files/*.sh tests/*.sh .github/scripts/*.sh \
+          shellcheck build_files/*.sh tests/*.sh .github/scripts/*.sh instalador/*.sh \
             system_files/usr/libexec/novasce/* system_files/usr/bin/novasce-primeiro-uso
       - name: versão do dia
         run: bash tests/versao.test.sh
+      - name: instalador da casa (kickstart, política e pendrive)
+        run: |
+          python3 -m venv /tmp/ks
+          /tmp/ks/bin/pip install --quiet pykickstart==3.78
+          PATH="/tmp/ks/bin:$PATH" bash tests/instalador.test.sh
 
   rust:
     runs-on: ubuntu-24.04
