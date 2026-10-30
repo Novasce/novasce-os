@@ -64,6 +64,9 @@ conferir "bloqueio com o papel teal" grep -q 'wallpapers/Novasce' "$PERFIL/kscre
 conferir "login com o papel teal" grep -q 'wallpapers/Novasce' /usr/lib/plasmalogin/defaults.conf
 conferir "esquema Novasce Claro" grep -qx 'Name=Novasce Claro' /usr/share/color-schemes/NovasceClaro.colors
 conferir "esquema Novasce Grafite" grep -qx 'BackgroundNormal=30,30,32' /usr/share/color-schemes/NovasceGrafite.colors
+for esquema in NovasceClaro NovasceGrafite; do
+  conferir "$esquema sem o nome traduzido do Breeze" sh -c "! grep -q '^Name\[' /usr/share/color-schemes/$esquema.colors"
+done
 
 echo "== Apps"
 conferir "novasce-sinal roda" /usr/bin/novasce-sinal --version
