@@ -9,6 +9,8 @@ on:
       - "**/*.md"
       - "docs/**"
       - "notas/**"
+      # O instalador roda na sede a partir das imagens publicadas; não entra na imagem.
+      - "instalador/**"
   schedule:
     - cron: "0 6 * * 6" # sábado 06:00 UTC: pega o Aurora novo da semana
   workflow_dispatch:
