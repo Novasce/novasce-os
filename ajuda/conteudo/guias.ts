@@ -39,7 +39,7 @@ export const GUIAS: Guia[] = [
     id: "com-o-tenancy", titulo: "Com o Tenancy", resumo: "O Tenancy segura a casa. O computador só abre e conversa.",
     passos: [
       { titulo: "Abrir o Tenancy", oQueFazer: "Abra o Tenancy em janela própria.", ondeClicar: "No T, no dock.", oQueDeveAparecer: "O seu quadro, com o seu nome no alto." },
-      { titulo: "Ligar a IA ao Tenancy", oQueFazer: "Crie a sua chave de IA no Tenancy e cole no Começar.", ondeClicar: "No passo 2 do Começar, em Ligar ao Tenancy.", oQueDeveAparecer: "Ligada, ao lado da IA." },
+      { titulo: "Ligar a IA ao Tenancy", oQueFazer: "Depois de instalar a IA, crie a sua chave no Tenancy, em IA, Novasce AI Tools, aba Chaves, e cole no Começar. A IA passa a ver o seu quadro.", ondeClicar: "No passo 2 do Começar, em Ligar.", oQueDeveAparecer: "Ligada. O Claude já enxerga o seu Tenancy." },
     ],
   },
   {
