@@ -1,8 +1,9 @@
 # Novasce OS · configuração dos apps da casa (M3). Pública: nada aqui é segredo.
 # Reforço por máquina em /etc/novasce/apps.toml, chave por chave.
 [github]
-# Client ID do OAuth App "Novasce OS" (público). Vazio: o passo 3 do Começar explica e oferece pular.
-client_id = ""
+# Client ID do OAuth App "Novasce OS" (público), da org Novasce, com o Device Flow ligado e sem client secret.
+# Vazio: o passo 3 do Começar explica e oferece pular.
+client_id = "Ov23lil1GHiTVX5aNZoM"
 
 [brain]
 # Repositório-modelo da Novasce Base (privado, membro da org lê). Vazio ou inacessível: o brain nasce vazio, com README e AGENTS.md.
