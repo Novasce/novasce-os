@@ -352,9 +352,10 @@ Sem o `Relogin=true`, quem devolve a Sede é a guarda (`novasce-sede-guarda.serv
 
 ## 11. Agentes
 
-Na conta de administrador:
+Na conta de administrador, a caixa que os agentes leem (uma linha; fica só nesta máquina, nunca na imagem):
 
 ```bash
+echo 'endereco@da-caixa' | sudo tee /etc/novasce/agentes-email >/dev/null
 sudo novasce-primeiro-uso
 ```
 
