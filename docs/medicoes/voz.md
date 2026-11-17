@@ -1,6 +1,6 @@
 # Voz · medição num notebook sem NVIDIA
 
-Esta medição é feita na sede, depois da imagem do M3 publicada, num notebook sem placa NVIDIA, com o Eduardo presente. Os campos em branco são preenchidos com o que for medido. Nada aqui foi medido ainda.
+Esta medição é feita na sede, depois da imagem do M3 publicada, num notebook sem placa NVIDIA, com quem administra a sede presente. Os campos em branco são preenchidos com o que for medido. Nada aqui foi medido ainda.
 
 Data: AAAA-MM-DD · Máquina: <modelo da CPU> · <núcleos> núcleos · <RAM> · Novasce OS <versão>
 

@@ -3,7 +3,7 @@
 ## TLDR
 
 - O que se prova: a sede gera o instalador da casa, a máquina instala por ele já na imagem assinada da Novasce, mostra a marca no boot e no login, passa pelo Preparar esta máquina, entra sozinha na conta Sede com a Sala e atualiza e volta de versão.
-- Quem faz: o Eduardo, sentado na máquina da sede (RTX 2060).
+- Quem faz: quem administra a sede, sentado na máquina (RTX 2060).
 - Quanto tempo: umas 2 horas, com a instalação.
 - Marcado com **[só na máquina]**: o que o CI não consegue provar e só se confirma olhando a tela.
 - Sem a imagem publicada não há instalador da casa: só o item 0.6, o passo 0 (se a máquina já tem sistema), o 1 e o plano B até o B3b, que confere a Sala no navegador.
@@ -20,7 +20,7 @@ Em 26/10 a sessão foi guiada com a ponte do brain (`_meta/scripts/ponte-sede/`)
 - O gravador do pendrive pergunta o aparelho e a frase de confirmação: roda no Konsole com `bash <(curl -sS <ip-do-mac>:8765/pendrive)`, nunca num `curl | bash`.
 - Reiniciar com a Sede aberta: `systemctl reboot -i`. Sem o `-i`, o `systemctl reboot` recusa, porque a sessão da Sede é de outra conta (27/10).
 - O `sudo` pede a senha no próprio terminal da máquina (ele lê o `/dev/tty`, não a entrada padrão). Nenhum script lê, guarda ou envia senha.
-- Na conta Sede não há terminal (passo 8). Os scripts rodam na conta `eduardo`.
+- Na conta Sede não há terminal (passo 8). Os scripts rodam na conta de administrador.
 
 ## Antes de sair de casa
 
@@ -35,7 +35,7 @@ Em 26/10 a sessão foi guiada com a ponte do brain (`_meta/scripts/ponte-sede/`)
 
 ## G. Gerar o instalador na sede
 
-Na sede, na conta `eduardo`, com a versão nova já publicada (item 0.4). A sede baixa as duas imagens assinadas do GHCR e monta um ISO de cada uma com o bootc-image-builder (tipo `anaconda-iso`). Precisa de 45 GB livres e leva uns 40 a 80 minutos para os dois. Nada reinicia.
+Na sede, na conta de administrador, com a versão nova já publicada (item 0.4). A sede baixa as duas imagens assinadas do GHCR e monta um ISO de cada uma com o bootc-image-builder (tipo `anaconda-iso`). Precisa de 45 GB livres e leva uns 40 a 80 minutos para os dois. Nada reinicia.
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/Novasce/novasce-os/main/instalador/gerar.sh
@@ -101,8 +101,8 @@ Por que nada apaga sozinho: sem um kickstart próprio, o `anaconda-iso` do bootc
 1. Tirar o pendrive e reiniciar.
 2. Na tela azul do MOK: **Enroll MOK**, **Continue**, senha `universalblue`, **Reboot**. É igual ao Aurora: o instalador da casa importa a mesma chave da Universal Blue, do mesmo jeito. Numa máquina que já tinha a chave (a sede, desde 26/10), a tela azul pode não aparecer.
 3. Digitar a senha do disco, já na tela teal da Novasce.
-4. O **Plasma Setup** abre antes do login, como no Aurora: idioma, teclado, fuso, rede (o Wi-Fi entra aqui, se não houver cabo) e a conta `eduardo` como **administrador**.
-5. Entrar como `eduardo`. Num terminal: `mokutil --sb-state` e `nvidia-smi` (só no NVIDIA).
+4. O **Plasma Setup** abre antes do login, como no Aurora: idioma, teclado, fuso, rede (o Wi-Fi entra aqui, se não houver cabo) e uma conta de **administrador**.
+5. Entrar na conta de administrador. Num terminal: `mokutil --sb-state` e `nvidia-smi` (só no NVIDIA).
 
 **Esperado:** `SecureBoot enabled`; `nvidia-smi` mostra a GeForce RTX 2060. A conta nova já nasce na imagem da Novasce, com o dock e o papel de parede da casa (o defeito 5 de 27/10 não acontece).
 
@@ -146,7 +146,7 @@ Depois, B2 a B4 e seguir do passo 5.
 1. Dar boot pelo pendrive e escolher instalar.
 2. Usar o disco inteiro e apagar tudo. Se a máquina tiver um segundo disco (o do Windows, em 10/2026 um SSD à parte para jogos), escolher só o principal e deixar o outro desmarcado.
 3. Marcar **Criptografar meus dados** e usar a senha do item 0.6. **Obrigatório:** sem a cifra, não seguir. Cifrar depois quer dizer reinstalar a máquina, o passo 11 (agentes) só roda com o disco cifrado e o 12 (TPM) não existe sem ele.
-4. Criar o usuário `eduardo` como **administrador**.
+4. Criar um usuário **administrador**.
 
 **Esperado:** a instalação termina e pede para reiniciar. No B3, o boot pede a senha do disco: é a prova de que a cifra entrou.
 
@@ -154,7 +154,7 @@ Depois, B2 a B4 e seguir do passo 5.
 
 1. Tirar o pendrive e reiniciar.
 2. Na tela azul do MOK: **Enroll MOK**, **Continue**, senha `universalblue`, **Reboot**.
-3. Digitar a senha do disco e entrar como `eduardo`.
+3. Digitar a senha do disco e entrar na conta de administrador.
 4. Num terminal: `mokutil --sb-state` e `nvidia-smi`.
 
 **Esperado:** boot com a marca do Aurora; `SecureBoot enabled`; `nvidia-smi` mostra a GeForce RTX 2060.
@@ -165,7 +165,7 @@ Só enquanto a imagem da Novasce não está publicada. Com a imagem, pular para 
 
 Antes, ligar o Wi-Fi pelo ícone de rede da bandeja. Se o adaptador não aparecer, usar a internet do celular pelo cabo USB (ancoragem).
 
-1. Na conta `eduardo`, abrir o Firefox, que vem no Aurora (se não houver, instalar pela Discover), em `tenancy.novasce.com/sala`. F11 deixa em tela cheia.
+1. Na conta de administrador, abrir o Firefox, que vem no Aurora (se não houver, instalar pela Discover), em `tenancy.novasce.com/sala`. F11 deixa em tela cheia.
 2. No celular, abrir **Máquinas e telas** no Tenancy. Em **Pedidos novos**, conferir que o código é o da TV, clicar **Aprovar** e manter o nome "Tela da sede".
 3. Esperar a TV trocar sozinha. Ela pergunta a cada 3 segundos.
 4. Na TV, clicar **Ver tudo**, ler o QR com o celular, entrar e tocar em **Mostrar na TV**.
@@ -181,7 +181,7 @@ Antes, ligar o Wi-Fi pelo ícone de rede da bandeja. Se o adaptador não aparece
 - Passo 5: a Sala abre já pareada, sem pedir código. O token fica no navegador.
 - Passo 6: "Tela revogada. Ela volta a mostrar o código para conectar." Na leitura seguinte, a TV mostra "O acesso desta tela foi revogado. Peça a aprovação de novo com o código abaixo."
 
-Se a TV ficar na Sala até a imagem chegar, pular o passo 6 e, nas Configurações do Sistema da conta `eduardo`, desligar o apagar da tela, a suspensão e o bloqueio automático. Quando a imagem chegar, revogar esta tela: a conta Sede pareia a dela no passo 8.
+Se a TV ficar na Sala até a imagem chegar, pular o passo 6 e, nas Configurações do Sistema da conta de administrador, desligar o apagar da tela, a suspensão e o bloqueio automático. Quando a imagem chegar, revogar esta tela: a conta Sede pareia a dela no passo 8.
 
 ### B4. Trocar para a imagem da Novasce
 
@@ -192,7 +192,7 @@ sudo bootc status
 
 **Esperado:** o download termina com `Queued for next boot`; `bootc status` mostra `ghcr.io/novasce/novasce-os:stable-nvidia` em **staged**.
 
-O nome da máquina não se troca aqui. O assistente do primeiro boot (Plasma Setup) grava um nome (em 26/10, "eduardo"), e o Preparar grava `novasce-sede` no passo 7.1, antes do registro.
+O nome da máquina não se troca aqui. O assistente do primeiro boot (Plasma Setup) grava um nome (em 26/10, o da conta de administrador), e o Preparar grava `novasce-sede` no passo 7.1, antes do registro.
 
 Por que passa já na primeira vez: o `--enforce-container-sigpolicy` exige que a política da máquina recuse por padrão o que não tem regra, e a do Aurora recusa. Esta primeira troca confia no TLS do GHCR, porque o Aurora ainda não conhece a chave da Novasce. A partir do próximo boot, a política da própria imagem confere a chave da casa em toda atualização (passo 6).
 
@@ -211,7 +211,7 @@ systemctl reboot
 - Tela de login: o papel de parede teal com o cata-vento gigante tom sobre tom.
 - Depois do login, a abertura: teal, cata-vento parado e a linha que anda até o fim.
 - Área de trabalho B: barra fina no alto (cata-vento no menu, menu do app, bandeja e relógio) e dock flutuante embaixo com os apps.
-- Papel de parede: o teal da Novasce na área de trabalho, não o do Aurora nem o padrão do KDE. No plano B, a conta `eduardo` nasceu no Aurora, antes da troca: ela também tem que mostrar o da Novasce. Se não mostrar, anotar e conferir `grep novasce-papel ~/.config/plasmashellrc` (o Plasma anota ali os scripts de atualização que já rodou).
+- Papel de parede: o teal da Novasce na área de trabalho, não o do Aurora nem o padrão do KDE. No plano B, a conta de administrador nasceu no Aurora, antes da troca: ela também tem que mostrar o da Novasce. Se não mostrar, anotar e conferir `grep novasce-papel ~/.config/plasmashellrc` (o Plasma anota ali os scripts de atualização que já rodou).
 - Ícones do dock: o Tenancy com o cata-vento branco no degradê teal; Claude, ChatGPT, Gemini e WhatsApp com a marca de cada um num quadrado branco; o Material da casa com a pasta de documentos do KDE. Nenhum quadrado colorido com uma letra.
 
 ## 6. Conferir a assinatura
@@ -227,11 +227,11 @@ grep IMAGE_VERSION /usr/lib/os-release
 
 ## 7. Preparar esta máquina
 
-O Preparar abre sozinho no login do `eduardo` (administrador). Se não abrir, procurar "Preparar esta máquina" no menu.
+O Preparar abre sozinho no login da conta de administrador. Se não abrir, procurar "Preparar esta máquina" no menu.
 
 | Passo | O que fazer | Esperado |
 |---|---|---|
-| 7.1 Papel | Escolher **Sede** e Continuar | A linha diz "Placa de vídeo encontrada: NVIDIA GeForce RTX 2060. Esta máquina usa a versão com NVIDIA." O KDE pede a senha de administrador uma vez. O nome da máquina passa a ser `novasce-sede` (é o nome que o registro manda ao Tenancy). Se o Chrome da conta `eduardo` estava aberto e reclamar que o perfil está "em uso em outro computador", desbloquear o perfil pelo botão do próprio aviso: é o nome que mudou |
+| 7.1 Papel | Escolher **Sede** e Continuar | A linha diz "Placa de vídeo encontrada: NVIDIA GeForce RTX 2060. Esta máquina usa a versão com NVIDIA." O KDE pede a senha de administrador uma vez. O nome da máquina passa a ser `novasce-sede` (é o nome que o registro manda ao Tenancy). Se o Chrome da conta de administrador estava aberto e reclamar que o perfil está "em uso em outro computador", desbloquear o perfil pelo botão do próprio aviso: é o nome que mudou |
 | 7.2 Rede | Com cabo, Continuar | "Esta máquina já está na internet, pelo cabo." |
 | 7.2b Rede por Wi-Fi (sem cabo; na sede é o caminho, porque lá não há cabo) | Tirar o cabo, escolher a rede, digitar a senha e clicar **Conectar** | "Esta máquina já está na internet, pela rede" e o nome dela. Com a senha errada: "Não conectou na rede" e o nome, e a rede não fica em `nmcli connection show` |
 | 7.3 Registro, sem o M2 no ar | Esperar a resposta | "O Tenancy ainda não recebe máquinas." Clicar **Registrar depois** |
@@ -299,7 +299,7 @@ Página de reserva, sem o Tenancy: tirar o adaptador Wi-Fi USB e reiniciar.
 
 ## 8b. Sede preparada antes desta versão
 
-Só numa sede que passou pelo Preparar antes da versão com o "Voltar à Sede" (a de 27/10 foi preparada na 2026.10.27.1). Uma sede nova já sai assim do passo 7. Na conta `eduardo`, no terminal da máquina (o KDE pede a senha de administrador):
+Só numa sede que passou pelo Preparar antes da versão com o "Voltar à Sede" (a de 27/10 foi preparada na 2026.10.27.1). Uma sede nova já sai assim do passo 7. Na conta de administrador, no terminal da máquina (o KDE pede a senha de administrador):
 
 ```bash
 pkexec /usr/libexec/novasce/novasce-helper preparar-sede
@@ -308,7 +308,7 @@ ls /usr/local/share/applications/
 systemctl reboot -i
 ```
 
-**Esperado:** a linha `{"evento":"sede"}`; a `sede` terminando em `/usr/sbin/nologin`; `novasce-voltar-a-sede.desktop` na pasta; depois do boot, a Sede entra sozinha com a Sala, como no passo 8. Se a Sede **não** entrar sozinha (a tela de login fica parada), voltar o shell na conta `eduardo` com `sudo usermod -s /bin/bash sede` e reiniciar: a entrada automática não aceitou o nologin, e isso vai para o cartão.
+**Esperado:** a linha `{"evento":"sede"}`; a `sede` terminando em `/usr/sbin/nologin`; `novasce-voltar-a-sede.desktop` na pasta; depois do boot, a Sede entra sozinha com a Sala, como no passo 8. Se a Sede **não** entrar sozinha (a tela de login fica parada), voltar o shell na conta de administrador com `sudo usermod -s /bin/bash sede` e reiniciar: a entrada automática não aceitou o nologin, e isso vai para o cartão.
 
 As contas pessoais criadas antes desta versão continuam com a senha que têm.
 
@@ -326,10 +326,10 @@ As contas pessoais criadas antes desta versão continuam com a senha que têm.
 Escolher a Sede no Trocar usuário abria uma segunda sessão dela, que travava (27/10): a tela de login só reaproveita sessão aberta por ela mesma, e a da Sede é aberta pela entrada automática. Agora a Sede nem aparece na lista, e a volta é pelo menu da conta pessoal.
 
 1. Na `teste`, abrir o menu e buscar **Voltar à Sede**. Clicar.
-2. Na conta `eduardo`: `loginctl list-sessions`.
+2. Na conta de administrador: `loginctl list-sessions`.
 3. Voltar à `teste` pelo Trocar usuário (senha da `teste`), abrir o Konsole e rodar `/usr/bin/novasce-voltar-a-sede` duas vezes seguidas, com uns segundos entre elas.
 4. Conta pessoal que encerra a sessão com a Sede aberta por trás: entrar na `teste` pelo Trocar usuário, menu, **Encerrar sessão**, e não entrar em nada por 3 minutos.
-5. Na conta `eduardo`: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
+5. Na conta de administrador: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
 
 **Esperado [só na máquina]:**
 
@@ -346,13 +346,13 @@ Sem o `Relogin=true`, quem devolve a Sede é a guarda (`novasce-sede-guarda.serv
 1. Na Sede, abrir o menu (tecla Windows) e **Encerrar sessão**. Na tela de login, não entrar em nada por 2 minutos.
 2. Repetir com uma conta pessoal aberta por trás (passo 9, sem encerrar a sessão dela): na Sede, **Encerrar sessão**, e esperar 3 minutos.
 3. Na `teste`, com a Sede fechada (item 2), buscar **Voltar à Sede** no menu.
-4. Na conta `eduardo`: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
+4. Na conta de administrador: `journalctl -u novasce-sede-guarda -b --no-pager | tail -n 5`.
 
 **Esperado [só na máquina]:** no 1, depois de uns 2 minutos a tela de login reinicia e a Sede entra sozinha, com a Sala. No 2, nada acontece: a conta pessoal segura a guarda, e a Sede volta quando ela encerrar a sessão. No 3, o aviso "A Sede não está aberta. Encerre a sua sessão, e em uns 2 minutos a TV volta para a Sala.", e a `teste` não tranca. No 4, a linha "A TV ficou 2 minutos só no login. A tela de login reinicia para a Sede entrar." uma vez para o item 1.
 
 ## 11. Agentes
 
-Na conta `eduardo`:
+Na conta de administrador:
 
 ```bash
 sudo novasce-primeiro-uso
@@ -455,7 +455,7 @@ grep IMAGE_VERSION /usr/lib/os-release
 
 ## Depois do M3 publicado
 
-Piloto: o Eduardo, no computador da empresa. Cada passo diz o que fazer e o que deve aparecer.
+Piloto: quem administra, no computador da empresa. Cada passo diz o que fazer e o que deve aparecer.
 
 | # | O que fazer | O que deve aparecer |
 |---|---|---|
