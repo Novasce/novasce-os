@@ -17,6 +17,10 @@ getent passwd agentes >/dev/null || {
 CASA=/var/lib/novasce-agentes
 EXECUTOR="$CASA/assistentes"
 BRAIN="$CASA/brain"
+# A caixa que os agentes leem é da máquina, não da imagem pública: uma linha em
+# /etc/novasce/agentes-email, gravada na sede. Sem ela, o passo mostra o lugar do endereço.
+EMAIL=$(head -n1 /etc/novasce/agentes-email 2>/dev/null || true)
+EMAIL=${EMAIL:-"<e-mail da caixa>"}
 
 passo() { printf '\n== %s\n' "$1"; }
 como_agentes() {
@@ -79,7 +83,8 @@ cat <<FALTA
      Contexto: $BRAIN/empresa/assistente-administrativo-contexto.md
      A senha de aplicativo vai em campo oculto, nunca em argumento.
      sudo -u agentes -H bash -c 'cd $EXECUTOR && npm run setup'
-     sudo -u agentes -H bash -c 'cd $EXECUTOR && npm run connect -- eduardo.savio@novasce.com --imap'
+     O endereço vem de /etc/novasce/agentes-email (sem ele, troque o marcador abaixo):
+     sudo -u agentes -H bash -c 'cd $EXECUTOR && npm run connect -- $EMAIL --imap'
      sudo -u agentes -H bash -c 'cd $EXECUTOR && npm run doctor -- --connections'
 
   c) Só com o doctor verde, ligar o agendamento:

@@ -116,6 +116,7 @@ conferir "Voltar à Sede chama o binário da volta" grep -qx 'Exec=/usr/bin/nova
 conferir "Voltar à Sede escondido na própria Sede" grep -qx 'Hidden=true' /usr/share/novasce/sede/novasce-voltar-a-sede-na-sede.desktop
 conferir "Voltar à Sede não vem no menu de todo notebook" test ! -e /usr/share/applications/novasce-voltar-a-sede.desktop
 conferir "nologin existe para a Sede sair da lista de login" test -x /usr/sbin/nologin
+conferir "nenhum e-mail no primeiro uso (a caixa vem de /etc/novasce/agentes-email)" sh -c "! grep -E '[A-Za-z0-9._-]+@[A-Za-z0-9-]+\.[a-z]+' /usr/bin/novasce-primeiro-uso | grep -v 'git@github.com' | grep -q ."
 conferir "receita do TPM com o nome de agora" sh -c "grep -q 'ujust toggle-tpm2' /usr/bin/novasce-primeiro-uso && ! grep -q setup-luks-tpm-unlock /usr/bin/novasce-primeiro-uso"
 conferir "Sala em perfil que persiste, sem modo anônimo" sh -c "grep -q 'user-data-dir' /usr/libexec/novasce/sala && ! grep -q incognito /usr/libexec/novasce/sala"
 conferir "o sistema não guarda token de tela" sh -c "! grep -rqs 'tela.json' /usr/libexec/novasce /usr/share/novasce /etc/xdg/autostart"
